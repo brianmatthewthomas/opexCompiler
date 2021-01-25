@@ -1,4 +1,4 @@
-###### OPEX compiler
+<h1>OPEX compiler</h1>
 
 This is a set of scripts and accompanying module to compile an OPEX file that can be ingested into Preservica.
 
