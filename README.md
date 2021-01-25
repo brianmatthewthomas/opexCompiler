@@ -1,4 +1,5 @@
 #OPEX compiler
+
 This is a set of scripts and accompanying module to compile an OPEX file that can be ingested into Preservica.
 
 The code is partially adapted based on a script made available by James Carr of Preservica in 2020 to help users cope with the Preservica v6.0 data model being released and its negative affects on the ability to ingest multipart items.
