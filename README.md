@@ -35,3 +35,6 @@ This operates off of a dictionary that should contain everything you need to get
                  'metadata_file': '[the metadata full filename]'}
     opexCreator.multi_upload(valuables)
 
+Note that as of 2021-01-28 at 4:10pm I could not get the system to work with an attached XIP, so the lines to export the XIP into a sidecar file have been commented out. Files will ingest with designated security tag but individual files will save as the default security tag. To fix this run the graphical permissions change on the asset/folder then if necessary use the update storage to send component files to the correct place.
+
+An updated footnote will be added if I can get the XIP working.
