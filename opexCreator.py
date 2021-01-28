@@ -1,17 +1,15 @@
 import datetime
+import hashlib
 import os
 import shutil
 import sys
 import threading
 import uuid
-import hashlib
+from os import listdir
+from os.path import isfile, join
 from xml.dom import minidom
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, SubElement
-import configparser
-from os import listdir
-from os.path import isfile, join
-
 
 import boto3
 import requests
@@ -41,7 +39,7 @@ class ProgressPercentage(object):
 def prettify(elem):
     rough_string = ElementTree.tostring(elem, 'utf-8')
     reparse = minidom.parseString(rough_string)
-    return reparse.toprettyxml(indent="  ")
+    return reparse.toprettyxml(indent="    ")
 
 
 def new_token(username, password, tenent, prefix):
@@ -68,6 +66,7 @@ def new_token(username, password, tenent, prefix):
 
 # using a dictionary to pass data to the multipart upload script for simplicity of coding, can also include as individual variables
 def multi_upload(valuables):
+    toDelete = []
     # unpack the dictionary to individual variables
     access_directory = valuables['access_directory']
     preservation_directory = valuables['preservation_directory']
@@ -109,10 +108,10 @@ def multi_upload(valuables):
             if ".metadata" not in filename:
                 filename1 = os.path.join(dirpath, filename)
                 filename2 = os.path.join(access_representation, filename[:-4], filename)
-                print(filename2)
                 if not os.path.exists(os.path.dirname(filename2)):
                     os.makedirs(os.path.dirname(filename2), exist_ok=True)
                 shutil.copyfile(filename1,filename2)
+                toDelete.append(filename2)
     for dirpath, dirnames, filenames in os.walk(preservation_directory):
         for filename in filenames:
             if ".metadata" not in filename:
@@ -121,6 +120,7 @@ def multi_upload(valuables):
                 if not os.path.exists(os.path.dirname(filename2)):
                     os.makedirs(os.path.dirname(filename2), exist_ok=True)
                 shutil.copyfile(filename1, filename2)
+                toDelete.append(filename2)
     # start creating the representations, content objects and bitstreams
     access_refs_dict = {}
     if access_representation:
@@ -141,12 +141,13 @@ def multi_upload(valuables):
     if preservation_representation:
         make_bitstream(xip, preservation_refs_dict, preservation_directory, "Access1")
     pax_folder = export_dir + "/" + asset_title
-    pax_file = pax_folder + "/" + asset_title + ".xip"
-    metadata = open(pax_file, "wt", encoding='utf-8')
-    metadata.write(prettify(xip))
-    metadata.close()
+    # currently unable to get xip to work with preservica ingest, uncomment the 4 lines below if/when it starts working
+    # pax_file = pax_folder + "/" + asset_title + ".xip"
+    # metadata = open(pax_file, "wt", encoding='utf-8')
+    # metadata.write(prettify(xip))
+    # metadata.close()
     tempy = export_dir + "/temp"
-    os.mkdir(tempy)
+    os.makedirs(tempy, exist_ok=True)
     archive_name = export_dir + "/" + asset_title + ".pax"
     shutil.make_archive(archive_name, "zip", pax_folder)
     archive_name = archive_name + ".zip"
@@ -157,8 +158,19 @@ def multi_upload(valuables):
     shutil.make_archive(compiled_opex, "zip", tempy)
     compiled_opex = compiled_opex + ".zip"
     valuables['compiled_opex'] = compiled_opex
-    print(valuables)
+    print("uploading",asset_title)
     uploader(valuables)
+    toDelete.append(compiled_opex)
+    toDelete.append(archive_name2)
+    toDelete.append(archive_name2 + ".opex")
+    #cleanup
+    for item in toDelete:
+        os.remove(item)
+    try:
+        os.rmdir(export_dir + "/" + asset_title)
+        os.rmdir(tempy)
+    except:
+        print("\n","unable to remove staging folder for",asset_title)
 
 def uploader(valuables):
     token = new_token(valuables['username'], valuables['password'], valuables['tenent'], valuables['prefix'])
@@ -186,12 +198,33 @@ def make_representation(xip, rep_name, rep_type, path, io_ref):
     content_objects = SubElement(representation, 'ContentObjects')
     rep_files = [f for f in listdir(path) if isfile(join(path, f))]
     refs_dict = {}
+    counter = 0
     for f in rep_files:
         if not f.endswith((".metadata")):
             content_object = SubElement(content_objects, 'ContentObject')
             content_object_ref = str(uuid.uuid4())
             content_object.text = content_object_ref
             refs_dict[f] = content_object_ref
+            counter += 1
+    repFormat = SubElement(representation, "RepresentationFormats")
+    repProperties = SubElement(representation, "RepresentationProperties")
+    if "Preservation" in rep_name:
+        repProperty1 = SubElement(repProperties, "RepresentationProperty")
+        repPUID = SubElement(repProperty1, "PUID")
+        repPUID.text = "prp/17"
+        repPropName = SubElement(repProperty1, "PropertyName")
+        repPropName.text = "Number of Pages"
+        repValue = SubElement(repProperty1, "Value")
+        repValue.text = str(counter)
+        repFormat1 = SubElement(repFormat, "RepresentationFormat")
+        repFormat1_uuid = SubElement(repFormat1, "PUID")
+        repFormat1_uuid.text = "repfmt/6"
+        repFormat1_FormatName = SubElement(repFormat1, "FormatName")
+        repFormat1_FormatName.text = "Renderable Multi Image"
+        repFormat1_priority = SubElement(repFormat1, "Priority")
+        repFormat1_priority.text = "1"
+        repFormat1_valid = SubElement(repFormat1, "Valid")
+        repFormat1_valid.text = "false"
     return refs_dict
 
 def make_content_objects(xip, refs_dict, io_ref, tag, content_description, content_type):
@@ -221,7 +254,7 @@ def make_generation(xip, refs_dict, generation_label):
         else:
             label.text = os.path.splitext(filename)[1]
         effective_date = SubElement(generation, "EffectiveDate")
-        effective_date.text = datetime.datetime.now().isoformat()
+        effective_date.text = datetime.datetime.now().isoformat()[:-7] + "Z"
         bitstreams = SubElement(generation, "Bitstreams")
         bitstream = SubElement(bitstreams, "Bitstream")
         bitstream.text = "Representation_" + generation_label[:-1] + "/" + filename[:-4] + "/" + filename
@@ -290,10 +323,4 @@ def create_sha1(filename):
             buffer = f.read(blocksize)
     fixity = sha1.hexdigest()
     return fixity
-
-# valuables = {'export_directory': './', 'opex_filename': 'trial.xml',
-#              'asset_title': 'opexTrial','asset_description': 'opexTrial',
-#              'asset_tag': 'Digitized',
-#              'metadata_file': '/media/sf_G_DRIVE/working_electronicRecords/dcterms/agencies/CapBuildingComm/dcterms-CapBldgComm-findingaid.xml'}
-# dothis = make_opex(valuables)
 
