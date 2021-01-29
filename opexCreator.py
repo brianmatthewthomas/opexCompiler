@@ -137,9 +137,9 @@ def multi_upload(valuables):
     if preservation_refs_dict:
         make_generation(xip, preservation_refs_dict, "Preservation1")
     if access_refs_dict:
-        make_bitstream(xip, access_refs_dict, access_directory, "Access1")
+        make_bitstream(xip, access_refs_dict, access_directory, "Access1", access_representation)
     if preservation_representation:
-        make_bitstream(xip, preservation_refs_dict, preservation_directory, "Access1")
+        make_bitstream(xip, preservation_refs_dict, preservation_directory, "Preservation1", preservation_representation)
     pax_folder = export_dir + "/" + asset_title
     # currently unable to get xip to work with preservica ingest, uncomment the 4 lines below if/when it starts working
     # pax_file = pax_folder + "/" + asset_title + ".xip"
@@ -261,7 +261,7 @@ def make_generation(xip, refs_dict, generation_label):
         SubElement(generation, "Formats")
         SubElement(generation, "Properties")
 
-def make_bitstream(xip, refs_dict, root_path, generation_label):
+def make_bitstream(xip, refs_dict, root_path, generation_label, representation_location):
     for filename, ref in refs_dict.items():
         bitstream = SubElement(xip, "Bitstream")
         filenameElement = SubElement(bitstream, "Filename")
@@ -275,9 +275,16 @@ def make_bitstream(xip, refs_dict, root_path, generation_label):
         fixities = SubElement(bitstream, "Fixities")
         fixity = SubElement(fixities, "Fixity")
         fixityAlgorithmRef = SubElement(fixity, "FixityAlgorithmRef")
-        fixityAlgorithmRef.text = "SHA1"
+        fixityAlgorithmRef.text = "SHA256"
         fixityValue = SubElement(fixity, "FixityValue")
-        fixityValue.text = create_sha1(fullPath)
+        fixityValue.text = create_sha256(fullPath)
+        representation_location2 = representation_location + "/" + filename[:-4] + "/" + filename
+        representation_checksum = create_sha256(representation_location2)
+        if representation_checksum == fixityValue.text:
+            print("checksum verified for", filename)
+        else:
+            print("checksum error for",filename,"exiting process")
+            sys.exit()
 
 
 def make_opex(valuables, filename2):
@@ -286,8 +293,8 @@ def make_opex(valuables, filename2):
     opexSource = SubElement(opexTransfer, "opex:SourceID")
     opexSource.text = valuables["asset_id"]
     opexFixities = SubElement(opexTransfer, "opex:Fixities")
-    opexSHA1 = create_sha1(filename2)
-    opexFixity = SubElement(opexFixities, "opex:Fixity", {'type': 'SHA-1', 'value': opexSHA1})
+    opexSHA256 = create_sha256(filename2)
+    opexFixity = SubElement(opexFixities, "opex:Fixity", {'type': 'SHA-256', 'value': opexSHA256})
     opex_properties = SubElement(opex, 'opex:Properties')
     opex_title = SubElement(opex_properties, 'opex:Title')
     opex_title.text = valuables['asset_title']
@@ -313,14 +320,14 @@ def make_opex(valuables, filename2):
                     w.write(fileinfo)
                     w.close()
 
-def create_sha1(filename):
-    sha1 = hashlib.sha1()
+def create_sha256(filename):
+    sha256 = hashlib.sha256()
     blocksize = 65536
     with open(filename, 'rb') as f:
         buffer = f.read(blocksize)
         while len(buffer) > 0:
-            sha1.update(buffer)
+            sha256.update(buffer)
             buffer = f.read(blocksize)
-    fixity = sha1.hexdigest()
+    fixity = sha256.hexdigest()
     return fixity
 
