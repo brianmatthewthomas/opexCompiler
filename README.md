@@ -32,7 +32,8 @@ This operates off of a dictionary that should contain everything you need to get
                  'parent_uuid': '[UUID for parent folder]',
                  'export_directory': '[absolute or relative path to export to, is a working directory]',
                  'asset_description': '[description of stuff]',
-                 'metadata_file': '[the metadata full filename]'}
+                 'metadata_file': '[the metadata full filename]',
+                 'ignore': [file extension to ignore as comma list like a csv]}
     opexCreator.multi_upload(valuables)
 
 <h2>footnotes</h2>

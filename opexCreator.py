@@ -105,7 +105,7 @@ def multi_upload(valuables):
     preservation_representation = os.path.join(export_dir, asset_title, "Representation_Preservation")
     for dirpath, dirnames, filenames in os.walk(access_directory):
         for filename in filenames:
-            if ".metadata" not in filename:
+            if not filename.endswith(tuple(valuables['ignore'])):
                 filename1 = os.path.join(dirpath, filename)
                 filename2 = os.path.join(access_representation, filename[:-4], filename)
                 if not os.path.exists(os.path.dirname(filename2)):
@@ -114,7 +114,7 @@ def multi_upload(valuables):
                 toDelete.append(filename2)
     for dirpath, dirnames, filenames in os.walk(preservation_directory):
         for filename in filenames:
-            if ".metadata" not in filename:
+            if not filename.endswith(tuple(valuables['ignore'])):
                 filename1 = os.path.join(dirpath, filename)
                 filename2 = os.path.join(preservation_representation, filename[:-4], filename)
                 if not os.path.exists(os.path.dirname(filename2)):
@@ -124,10 +124,10 @@ def multi_upload(valuables):
     # start creating the representations, content objects and bitstreams
     access_refs_dict = {}
     if access_representation:
-        access_refs_dict = make_representation(xip, "Access", "Access", access_directory, asset_id)
+        access_refs_dict = make_representation(xip, "Access", "Access", access_directory, asset_id, valuables)
     preservation_refs_dict = {}
     if preservation_representation:
-        preservation_refs_dict = make_representation(xip, "Preservation", "Preservation", preservation_directory, asset_id)
+        preservation_refs_dict = make_representation(xip, "Preservation", "Preservation", preservation_directory, asset_id, valuables)
     if access_refs_dict:
         make_content_objects(xip, access_refs_dict, asset_id, asset_tag, "", "")
     if preservation_refs_dict:
@@ -187,7 +187,7 @@ def uploader(valuables):
     response = client.upload_file(sip_name, bucket, valuables['asset_id'] + ".zip", ExtraArgs=metadata,
                                   Callback=ProgressPercentage(sip_name), Config=transfer_config)
 
-def make_representation(xip, rep_name, rep_type, path, io_ref):
+def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
     representation = SubElement(xip, 'Representation')
     io_link = SubElement(representation, "InformationObject")
     io_link.text = io_ref
@@ -200,7 +200,7 @@ def make_representation(xip, rep_name, rep_type, path, io_ref):
     refs_dict = {}
     counter = 0
     for f in rep_files:
-        if not f.endswith((".metadata")):
+        if not f.endswith(tuple(valuables['ignore'])):
             content_object = SubElement(content_objects, 'ContentObject')
             content_object_ref = str(uuid.uuid4())
             content_object.text = content_object_ref
