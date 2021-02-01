@@ -65,7 +65,7 @@ def new_token(username, password, tenent, prefix):
 
 
 # using a dictionary to pass data to the multipart upload script for simplicity of coding, can also include as individual variables
-def multi_upload(valuables):
+def multi_upload_withXIP(valuables):
     toDelete = []
     # unpack the dictionary to individual variables
     access_directory = valuables['access_directory']
@@ -107,7 +107,7 @@ def multi_upload(valuables):
         for filename in filenames:
             if not filename.endswith(tuple(valuables['ignore'])):
                 filename1 = os.path.join(dirpath, filename)
-                filename2 = os.path.join(access_representation, filename[:-4], filename)
+                filename2 = os.path.join(access_representation, filename[:-4] + "_" + filename[-3:], filename)
                 if not os.path.exists(os.path.dirname(filename2)):
                     os.makedirs(os.path.dirname(filename2), exist_ok=True)
                 shutil.copyfile(filename1,filename2)
@@ -116,7 +116,7 @@ def multi_upload(valuables):
         for filename in filenames:
             if not filename.endswith(tuple(valuables['ignore'])):
                 filename1 = os.path.join(dirpath, filename)
-                filename2 = os.path.join(preservation_representation, filename[:-4], filename)
+                filename2 = os.path.join(preservation_representation, filename[:-4] + "_" + filename[-3:], filename)
                 if not os.path.exists(os.path.dirname(filename2)):
                     os.makedirs(os.path.dirname(filename2), exist_ok=True)
                 shutil.copyfile(filename1, filename2)
@@ -153,7 +153,7 @@ def multi_upload(valuables):
     archive_name = archive_name + ".zip"
     archive_name2 = archive_name.replace(export_dir, tempy)
     shutil.move(archive_name,archive_name2)
-    make_opex(valuables, filename2)
+    make_opex(valuables, archive_name2)
     compiled_opex = export_dir + "/" + asset_id
     shutil.make_archive(compiled_opex, "zip", tempy)
     compiled_opex = compiled_opex + ".zip"
@@ -172,6 +172,134 @@ def multi_upload(valuables):
     except:
         print("\n","unable to remove staging folder for",asset_title)
 
+def multi_upload(valuables):
+    # a trimmed down version of the version with XIP, because we honestly don't need the fluff
+    toDelete = []
+    # unpack the dictionary to individual variables
+    access_directory = valuables['access_directory']
+    preservation_directory = valuables['preservation_directory']
+    asset_title = valuables['asset_title']
+    export_dir = valuables['export_directory']
+    valuables['asset_id'] = str(uuid.uuid4())
+    asset_id = valuables['asset_id']
+    # copy the files to the export area for processing
+    access_representation = os.path.join(export_dir, asset_title, "Representation_Access")
+    preservation_representation = os.path.join(export_dir, asset_title, "Representation_Preservation")
+    for dirpath, dirnames, filenames in os.walk(access_directory):
+        for filename in filenames:
+            if not filename.endswith(tuple(valuables['ignore'])):
+                filename1 = os.path.join(dirpath, filename)
+                checksum1 = create_sha256(filename1)
+                if filename.split(".")[-1] == "srt":
+                    filename2 = os.path.join(access_representation, "English", filename)
+                elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                    filename2 = os.path.join(access_representation, "Movie", filename)
+                else:
+                    filename2 = os.path.join(access_representation, filename.split(".")[0], filename)
+                if not os.path.exists(os.path.dirname(filename2)):
+                    os.makedirs(os.path.dirname(filename2), exist_ok=True)
+                shutil.copyfile(filename1,filename2)
+                toDelete.append(filename2)
+                checksum2 = create_sha256(filename2)
+                if checksum1 == checksum2:
+                    print("copy of",filename,"verified, continuing")
+                else:
+                    print("error in copying of",filename,"... exiting, try again")
+                    sys.exit()
+    for dirpath, dirnames, filenames in os.walk(preservation_directory):
+        for filename in filenames:
+            if not filename.endswith(tuple(valuables['ignore'])):
+                filename1 = os.path.join(dirpath, filename)
+                checksum1 = create_sha256(filename1)
+                if filename.split(".")[-1] == "srt":
+                    filename2 = os.path.join(preservation_representation, "English", filename)
+                elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                    filename2 = os.path.join(preservation_representation, "Movie", filename)
+                else:
+                    filename2 = os.path.join(preservation_representation, filename.split(".")[0], filename)
+                if not os.path.exists(os.path.dirname(filename2)):
+                    os.makedirs(os.path.dirname(filename2), exist_ok=True)
+                shutil.copyfile(filename1, filename2)
+                toDelete.append(filename2)
+                checksum2 = create_sha256(filename2)
+                if checksum1 == checksum2:
+                    print("copy of",filename,"verified, continuing")
+                else:
+                    print("error in copying of",filename,"... exiting, try again")
+                    sys.exit()
+    pax_folder = export_dir + "/" + asset_title
+    tempy = export_dir + "/temp"
+    os.makedirs(tempy, exist_ok=True)
+    archive_name = export_dir + "/" + asset_title + ".pax"
+    shutil.make_archive(archive_name, "zip", pax_folder)
+    archive_name = archive_name + ".zip"
+    archive_name2 = archive_name.replace(export_dir, tempy)
+    shutil.move(archive_name,archive_name2)
+    make_opex(valuables, archive_name2)
+    compiled_opex = export_dir + "/" + asset_id
+    shutil.make_archive(compiled_opex, "zip", tempy)
+    compiled_opex = compiled_opex + ".zip"
+    valuables['compiled_opex'] = compiled_opex
+    print("uploading",asset_title)
+    uploader(valuables)
+    toDelete.append(compiled_opex)
+    toDelete.append(archive_name2)
+    toDelete.append(archive_name2 + ".opex")
+    #cleanup
+    for item in toDelete:
+        os.remove(item)
+    try:
+        os.rmdir(export_dir + "/" + asset_title)
+        os.rmdir(tempy)
+    except:
+        print("\n","unable to remove staging folder for",asset_title)
+
+def make_opex(valuables, filename2):
+    opex = Element('opex:OPEXMetadata', {'xmlns:opex': 'http://www.openpreservationexchange.org/opex/v1.0'})
+    opexTransfer = SubElement(opex, "opex:Transfer")
+    opexSource = SubElement(opexTransfer, "opex:SourceID")
+    opexSource.text = valuables["asset_id"]
+    opexFixities = SubElement(opexTransfer, "opex:Fixities")
+    opexSHA256 = create_sha256(filename2)
+    opexFixity = SubElement(opexFixities, "opex:Fixity", {'type': 'SHA-256', 'value': opexSHA256})
+    opex_properties = SubElement(opex, 'opex:Properties')
+    opex_title = SubElement(opex_properties, 'opex:Title')
+    opex_title.text = valuables['asset_title']
+    opex_description = SubElement(opex_properties, 'opex:Description')
+    if valuables['asset_description'] not in valuables.keys():
+        valuables['asset_description'] = valuables['asset_title']
+    opex_description.text = valuables['asset_description']
+    opex_security = SubElement(opex_properties, 'opex:SecurityDescriptor')
+    opex_security.text = valuables['asset_tag']
+    if 'metadata_file' in valuables.keys():
+        opex_metadata = SubElement(opex, 'opex:DescriptiveMetadata')
+        opex_metadata.text = "This is where the metadata goes"
+    export_file = valuables['export_directory'] + "/temp/" + valuables['asset_title'] + ".pax.zip.opex"
+    opex_output = open(export_file, "w", encoding='utf-8')
+    opex_output.write(prettify(opex))
+    opex_output.close()
+    if 'metadata_file' in valuables.keys():
+        with open(valuables['metadata_file'], 'r') as f:
+            filedata = f.read()
+            filedata = filedata.replace('<?xml version="1.0" encoding="UTF-8"?>', "")
+            with open(export_file, "r") as r:
+                fileinfo = r.read()
+                fileinfo = fileinfo.replace("This is where the metadata goes",filedata)
+                with open(export_file, "w") as w:
+                    w.write(fileinfo)
+                    w.close()
+
+def create_sha256(filename):
+    sha256 = hashlib.sha256()
+    blocksize = 65536
+    with open(filename, 'rb') as f:
+        buffer = f.read(blocksize)
+        while len(buffer) > 0:
+            sha256.update(buffer)
+            buffer = f.read(blocksize)
+    fixity = sha256.hexdigest()
+    return fixity
+
 def uploader(valuables):
     token = new_token(valuables['username'], valuables['password'], valuables['tenent'], valuables['prefix'])
     print(token)
@@ -184,8 +312,16 @@ def uploader(valuables):
                           config=Config(s3={'addressing_style': 'path'}))
     sip_name = valuables['compiled_opex']
     metadata = {'Metadata': {'structuralObjectreference': valuables['parent_uuid']}}
-    response = client.upload_file(sip_name, bucket, valuables['asset_id'] + ".zip", ExtraArgs=metadata,
-                                  Callback=ProgressPercentage(sip_name), Config=transfer_config)
+    switch = 0
+    while switch != 3:
+        try:
+            response = client.upload_file(sip_name, bucket, valuables['asset_id'] + ".zip", ExtraArgs=metadata,
+                                          Callback=ProgressPercentage(sip_name), Config=transfer_config)
+            switch = 3
+            print("\n", "upload successful")
+        except:
+            print("upload failure, trying again")
+            switch += 1
 
 def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
     representation = SubElement(xip, 'Representation')
@@ -257,7 +393,7 @@ def make_generation(xip, refs_dict, generation_label):
         effective_date.text = datetime.datetime.now().isoformat()[:-7] + "Z"
         bitstreams = SubElement(generation, "Bitstreams")
         bitstream = SubElement(bitstreams, "Bitstream")
-        bitstream.text = "Representation_" + generation_label[:-1] + "/" + filename[:-4] + "/" + filename
+        bitstream.text = "Representation_" + generation_label[:-1] + "/" + filename[:-4] + "_" + filename[-3:] + "/" + filename
         SubElement(generation, "Formats")
         SubElement(generation, "Properties")
 
@@ -271,63 +407,18 @@ def make_bitstream(xip, refs_dict, root_path, generation_label, representation_l
         file_stats = os.stat(fullPath)
         filesize.text = str(file_stats.st_size)
         physloc = SubElement(bitstream, "PhysicalLocation")
-        physloc.text = "Representation_" + generation_label[:-1] + "/" + filename[:-4]
+        physloc.text = "Representation_" + generation_label[:-1] + "/" + filename[:-4] + "_" + filename[-3:]
         fixities = SubElement(bitstream, "Fixities")
         fixity = SubElement(fixities, "Fixity")
         fixityAlgorithmRef = SubElement(fixity, "FixityAlgorithmRef")
         fixityAlgorithmRef.text = "SHA256"
         fixityValue = SubElement(fixity, "FixityValue")
         fixityValue.text = create_sha256(fullPath)
-        representation_location2 = representation_location + "/" + filename[:-4] + "/" + filename
+        representation_location2 = representation_location + "/" + filename[:-4] + "_" + filename[-3:] + "/" + filename
         representation_checksum = create_sha256(representation_location2)
         if representation_checksum == fixityValue.text:
             print("checksum verified for", filename)
         else:
             print("checksum error for",filename,"exiting process")
             sys.exit()
-
-
-def make_opex(valuables, filename2):
-    opex = Element('opex:OPEXMetadata', {'xmlns:opex': 'http://www.openpreservationexchange.org/opex/v1.0'})
-    opexTransfer = SubElement(opex, "opex:Transfer")
-    opexSource = SubElement(opexTransfer, "opex:SourceID")
-    opexSource.text = valuables["asset_id"]
-    opexFixities = SubElement(opexTransfer, "opex:Fixities")
-    opexSHA256 = create_sha256(filename2)
-    opexFixity = SubElement(opexFixities, "opex:Fixity", {'type': 'SHA-256', 'value': opexSHA256})
-    opex_properties = SubElement(opex, 'opex:Properties')
-    opex_title = SubElement(opex_properties, 'opex:Title')
-    opex_title.text = valuables['asset_title']
-    opex_description = SubElement(opex_properties, 'opex:Description')
-    opex_description.text = valuables['asset_description']
-    opex_security = SubElement(opex_properties, 'opex:SecurityDescriptor')
-    opex_security.text = valuables['asset_tag']
-    if 'metadata_file' in valuables.keys():
-        opex_metadata = SubElement(opex, 'opex:DescriptiveMetadata')
-        opex_metadata.text = "This is where the metadata goes"
-    export_file = valuables['export_directory'] + "/temp/" + valuables['asset_title'] + ".pax.zip.opex"
-    opex_output = open(export_file, "w", encoding='utf-8')
-    opex_output.write(prettify(opex))
-    opex_output.close()
-    if 'metadata_file' in valuables.keys():
-        with open(valuables['metadata_file'], 'r') as f:
-            filedata = f.read()
-            filedata = filedata.replace('<?xml version="1.0" encoding="UTF-8"?>', "")
-            with open(export_file, "r") as r:
-                fileinfo = r.read()
-                fileinfo = fileinfo.replace("This is where the metadata goes",filedata)
-                with open(export_file, "w") as w:
-                    w.write(fileinfo)
-                    w.close()
-
-def create_sha256(filename):
-    sha256 = hashlib.sha256()
-    blocksize = 65536
-    with open(filename, 'rb') as f:
-        buffer = f.read(blocksize)
-        while len(buffer) > 0:
-            sha256.update(buffer)
-            buffer = f.read(blocksize)
-    fixity = sha256.hexdigest()
-    return fixity
 
