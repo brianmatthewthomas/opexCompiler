@@ -376,7 +376,7 @@ def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
         repFormat1_priority = SubElement(repFormat1, "Priority")
         repFormat1_priority.text = "1"
         repFormat1_valid = SubElement(repFormat1, "Valid")
-        repFormat1_valid.text = "false"
+        repFormat1_valid.text = "true"
     if "Preservation" in rep_name and valuables['special_format'] == 'multi-page document':
         repProperties = SubElement(representation, "RepresentationProperties")
         repProperty1 = SubElement(repProperties, "RepresentationProperty")
