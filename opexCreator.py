@@ -107,20 +107,44 @@ def multi_upload_withXIP(valuables):
         for filename in filenames:
             if not filename.endswith(tuple(valuables['ignore'])):
                 filename1 = os.path.join(dirpath, filename)
-                filename2 = os.path.join(access_representation, filename[:-4] + "_" + filename[-3:], filename)
+                checksum1 = create_sha256(filename1)
+                if filename.split(".")[-1] == "srt":
+                    filename2 = os.path.join(access_representation, "English", filename)
+                elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                    filename2 = os.path.join(access_representation, "Movie", filename)
+                else:
+                    filename2 = os.path.join(access_representation, filename.split(".")[0], filename)
                 if not os.path.exists(os.path.dirname(filename2)):
                     os.makedirs(os.path.dirname(filename2), exist_ok=True)
                 shutil.copyfile(filename1,filename2)
                 toDelete.append(filename2)
+                checksum2 = create_sha256(filename2)
+                if checksum1 == checksum2:
+                    print("copy of",filename,"verified, continuing")
+                else:
+                    print("error in copying of",filename,"... exiting, try again")
+                    sys.exit()
     for dirpath, dirnames, filenames in os.walk(preservation_directory):
         for filename in filenames:
             if not filename.endswith(tuple(valuables['ignore'])):
                 filename1 = os.path.join(dirpath, filename)
-                filename2 = os.path.join(preservation_representation, filename[:-4] + "_" + filename[-3:], filename)
+                checksum1 = create_sha256(filename1)
+                if filename.split(".")[-1] == "srt":
+                    filename2 = os.path.join(preservation_representation, "English", filename)
+                elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                    filename2 = os.path.join(preservation_representation, "Movie", filename)
+                else:
+                    filename2 = os.path.join(preservation_representation, filename.split(".")[0], filename)
                 if not os.path.exists(os.path.dirname(filename2)):
                     os.makedirs(os.path.dirname(filename2), exist_ok=True)
                 shutil.copyfile(filename1, filename2)
                 toDelete.append(filename2)
+                checksum2 = create_sha256(filename2)
+                if checksum1 == checksum2:
+                    print("copy of",filename,"verified, continuing")
+                else:
+                    print("error in copying of",filename,"... exiting, try again")
+                    sys.exit()
     # start creating the representations, content objects and bitstreams
     access_refs_dict = {}
     if access_representation:
@@ -142,10 +166,10 @@ def multi_upload_withXIP(valuables):
         make_bitstream(xip, preservation_refs_dict, preservation_directory, "Preservation1", preservation_representation)
     pax_folder = export_dir + "/" + asset_title
     # currently unable to get xip to work with preservica ingest, uncomment the 4 lines below if/when it starts working
-    # pax_file = pax_folder + "/" + asset_title + ".xip"
-    # metadata = open(pax_file, "wt", encoding='utf-8')
-    # metadata.write(prettify(xip))
-    # metadata.close()
+    pax_file = pax_folder + "/" + asset_title + ".xip"
+    metadata = open(pax_file, "wt", encoding='utf-8')
+    metadata.write(prettify(xip))
+    metadata.close()
     tempy = export_dir + "/temp"
     os.makedirs(tempy, exist_ok=True)
     archive_name = export_dir + "/" + asset_title + ".pax"
@@ -343,8 +367,18 @@ def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
             refs_dict[f] = content_object_ref
             counter += 1
     repFormat = SubElement(representation, "RepresentationFormats")
-    repProperties = SubElement(representation, "RepresentationProperties")
-    if "Preservation" in rep_name:
+    if valuables['special_format'] == "film":
+        repFormat1 = SubElement(repFormat, "RepresentationFormat")
+        repFormat1_uuid = SubElement(repFormat1, "PUID")
+        repFormat1_uuid.text = "repfmt/7"
+        repFormat1_FormatName = SubElement(repFormat1, "FormatName")
+        repFormat1_FormatName.text = "Captioned Video"
+        repFormat1_priority = SubElement(repFormat1, "Priority")
+        repFormat1_priority.text = "1"
+        repFormat1_valid = SubElement(repFormat1, "Valid")
+        repFormat1_valid.text = "false"
+    if "Preservation" in rep_name and valuables['special_format'] == 'multi-page document':
+        repProperties = SubElement(representation, "RepresentationProperties")
         repProperty1 = SubElement(repProperties, "RepresentationProperty")
         repPUID = SubElement(repProperty1, "PUID")
         repPUID.text = "prp/17"
@@ -357,10 +391,15 @@ def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
         repFormat1_uuid.text = "repfmt/6"
         repFormat1_FormatName = SubElement(repFormat1, "FormatName")
         repFormat1_FormatName.text = "Renderable Multi Image"
-        repFormat1_priority = SubElement(repFormat1, "Priority")
-        repFormat1_priority.text = "1"
-        repFormat1_valid = SubElement(repFormat1, "Valid")
-        repFormat1_valid.text = "false"
+        repFormat2 = SubElement(repFormat, "RepresentationFormat")
+        repFormat2_uuid = SubElement(repFormat2, "PUID")
+        repFormat2_uuid.text = "repfmt/5"
+        repFormat2_FormatName = SubElement(repFormat2, "FormatName")
+        repFormat2_FormatName.text = "Renderable Multi Image"
+        repFormat2_priority = SubElement(repFormat2, "Priority")
+        repFormat2_priority.text = "2"
+        repFormat2_valid = SubElement(repFormat2, "Valid")
+        repFormat2_valid.text = "false"
     return refs_dict
 
 def make_content_objects(xip, refs_dict, io_ref, tag, content_description, content_type):
@@ -369,7 +408,12 @@ def make_content_objects(xip, refs_dict, io_ref, tag, content_description, conte
         ref_element = SubElement(content_object, 'Ref')
         ref_element.text = ref
         title = SubElement(content_object, 'Title')
-        title.text = os.path.splitext(filename)[0]
+        if filename.split(".")[-1] == "srt":
+            title.text = "English"
+        elif filename.endswith(tuple(["mp4", "m4v", "mov"])):
+            title.text = "Movie"
+        else:
+            title.text = os.path.splitext(filename)[0]
         description = SubElement(content_object, "Description")
         description.text = content_description
         security_tag = SubElement(content_object, "SecurityTag")
@@ -393,7 +437,12 @@ def make_generation(xip, refs_dict, generation_label):
         effective_date.text = datetime.datetime.now().isoformat()[:-7] + "Z"
         bitstreams = SubElement(generation, "Bitstreams")
         bitstream = SubElement(bitstreams, "Bitstream")
-        bitstream.text = "Representation_" + generation_label[:-1] + "/" + filename[:-4] + "_" + filename[-3:] + "/" + filename
+        if filename.split(".")[-1] == "srt":
+            bitstream.text = "Representation_" + generation_label[:-1] + "/English/" + filename
+        elif filename.endswith(tuple(["mp4", "m4v", "mov"])):
+            bitstream.text = "Representation_" + generation_label[:-1] + "/Movie/" + filename
+        else:
+            bitstream.text = "Representation_" + generation_label[:-1] + "/" + filename.split(".")[0] + "/" + filename
         SubElement(generation, "Formats")
         SubElement(generation, "Properties")
 
@@ -407,18 +456,16 @@ def make_bitstream(xip, refs_dict, root_path, generation_label, representation_l
         file_stats = os.stat(fullPath)
         filesize.text = str(file_stats.st_size)
         physloc = SubElement(bitstream, "PhysicalLocation")
-        physloc.text = "Representation_" + generation_label[:-1] + "/" + filename[:-4] + "_" + filename[-3:]
+        if filename.split(".")[-1] == "srt":
+            physloc.text = "Representation_" + generation_label[:-1] + "/English"
+        elif filename.endswith(tuple(["mp4", "m4v", "mov"])):
+            physloc.text = "Representation_" + generation_label[:-1] + "/Movie"
+        else:
+            physloc.text = "Representation_" + generation_label[:-1] + "/" + filename.split(".")[0]
         fixities = SubElement(bitstream, "Fixities")
         fixity = SubElement(fixities, "Fixity")
         fixityAlgorithmRef = SubElement(fixity, "FixityAlgorithmRef")
         fixityAlgorithmRef.text = "SHA256"
         fixityValue = SubElement(fixity, "FixityValue")
         fixityValue.text = create_sha256(fullPath)
-        representation_location2 = representation_location + "/" + filename[:-4] + "_" + filename[-3:] + "/" + filename
-        representation_checksum = create_sha256(representation_location2)
-        if representation_checksum == fixityValue.text:
-            print("checksum verified for", filename)
-        else:
-            print("checksum error for",filename,"exiting process")
-            sys.exit()
 
