@@ -366,7 +366,7 @@ def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
             content_object.text = content_object_ref
             refs_dict[f] = content_object_ref
             counter += 1
-    repFormat = SubElement(representation, "RepresentationFormats")
+    #repFormat = SubElement(representation, "RepresentationFormats")
     # if valuables['special_format'] == "film":
     #     repFormat1 = SubElement(repFormat, "RepresentationFormat")
     #     repFormat1_uuid = SubElement(repFormat1, "PUID")
