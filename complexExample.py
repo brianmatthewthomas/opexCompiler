@@ -67,7 +67,7 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
         if not filename.endswith((".metadata")):
             if dirpath != setup:
                 setup = dirpath
-                valuables['asset_title'] = dirpath.split("/")[-2]
+                valuables['asset_title'] = dirpath.split("/")[-1]
                 print(valuables['asset_title'])
                 valuables['asset_description'] = valuables['asset_title']
                 fileLength = len(filename)
