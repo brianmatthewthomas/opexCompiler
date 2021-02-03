@@ -84,7 +84,7 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
                 valuables['preservation_directory'] = dirpath5
                 if dirpath4 != dirpath3:
                     print("not a root asset, sending to subfolder")
-                    dirTitle = dirpath3[dirLength:-math]
+                    dirTitle = dirpath3.split("/")[-2]
                     print("drectory title:", dirTitle)
                     if dirTitle == secondaryTitle:
                         valuables['parent_uuid'] = secondaryDir
@@ -92,7 +92,7 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
                     if dirTitle != secondaryTitle:
                         print("directory doesn't exist yet, creating it")
                         headers = login(url, payload)
-                        data = '<StructuralObject xmlns="http://preservica.com/XIP/v6.2"><Title>' + dirTitle + '<Title><Description>' + dirTitle + '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + '</Parent></StructuralObject>'
+                        data = '<StructuralObject xmlns="http://preservica.com/XIP/v6.2"><Title>' + dirTitle + '</Title><Description>' + dirTitle + '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + '</Parent></StructuralObject>'
                         response = requests.post(base_url, headers=headers, data=data)
                         status = response.status_code
                         print(status)
