@@ -367,39 +367,39 @@ def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
             refs_dict[f] = content_object_ref
             counter += 1
     repFormat = SubElement(representation, "RepresentationFormats")
-    if valuables['special_format'] == "film":
-        repFormat1 = SubElement(repFormat, "RepresentationFormat")
-        repFormat1_uuid = SubElement(repFormat1, "PUID")
-        repFormat1_uuid.text = "repfmt/7"
-        repFormat1_FormatName = SubElement(repFormat1, "FormatName")
-        repFormat1_FormatName.text = "Captioned Video"
-        repFormat1_priority = SubElement(repFormat1, "Priority")
-        repFormat1_priority.text = "1"
-        repFormat1_valid = SubElement(repFormat1, "Valid")
-        repFormat1_valid.text = "true"
-    if "Preservation" in rep_name and valuables['special_format'] == 'multi-page document':
-        repProperties = SubElement(representation, "RepresentationProperties")
-        repProperty1 = SubElement(repProperties, "RepresentationProperty")
-        repPUID = SubElement(repProperty1, "PUID")
-        repPUID.text = "prp/17"
-        repPropName = SubElement(repProperty1, "PropertyName")
-        repPropName.text = "Number of Pages"
-        repValue = SubElement(repProperty1, "Value")
-        repValue.text = str(counter)
-        repFormat1 = SubElement(repFormat, "RepresentationFormat")
-        repFormat1_uuid = SubElement(repFormat1, "PUID")
-        repFormat1_uuid.text = "repfmt/6"
-        repFormat1_FormatName = SubElement(repFormat1, "FormatName")
-        repFormat1_FormatName.text = "Renderable Multi Image"
-        repFormat2 = SubElement(repFormat, "RepresentationFormat")
-        repFormat2_uuid = SubElement(repFormat2, "PUID")
-        repFormat2_uuid.text = "repfmt/5"
-        repFormat2_FormatName = SubElement(repFormat2, "FormatName")
-        repFormat2_FormatName.text = "Renderable Multi Image"
-        repFormat2_priority = SubElement(repFormat2, "Priority")
-        repFormat2_priority.text = "2"
-        repFormat2_valid = SubElement(repFormat2, "Valid")
-        repFormat2_valid.text = "false"
+    # if valuables['special_format'] == "film":
+    #     repFormat1 = SubElement(repFormat, "RepresentationFormat")
+    #     repFormat1_uuid = SubElement(repFormat1, "PUID")
+    #     repFormat1_uuid.text = "repfmt/7"
+    #     repFormat1_FormatName = SubElement(repFormat1, "FormatName")
+    #     repFormat1_FormatName.text = "Captioned Video"
+    #     repFormat1_priority = SubElement(repFormat1, "Priority")
+    #     repFormat1_priority.text = "1"
+    #     repFormat1_valid = SubElement(repFormat1, "Valid")
+    #     repFormat1_valid.text = "true"
+    # if "Preservation" in rep_name and valuables['special_format'] == 'multi-page document':
+    #     repProperties = SubElement(representation, "RepresentationProperties")
+    #     repProperty1 = SubElement(repProperties, "RepresentationProperty")
+    #     repPUID = SubElement(repProperty1, "PUID")
+    #     repPUID.text = "prp/17"
+    #     repPropName = SubElement(repProperty1, "PropertyName")
+    #     repPropName.text = "Number of Pages"
+    #     repValue = SubElement(repProperty1, "Value")
+    #     repValue.text = str(counter)
+    #     repFormat1 = SubElement(repFormat, "RepresentationFormat")
+    #     repFormat1_uuid = SubElement(repFormat1, "PUID")
+    #     repFormat1_uuid.text = "repfmt/6"
+    #     repFormat1_FormatName = SubElement(repFormat1, "FormatName")
+    #     repFormat1_FormatName.text = "Renderable Multi Image"
+    #     repFormat2 = SubElement(repFormat, "RepresentationFormat")
+    #     repFormat2_uuid = SubElement(repFormat2, "PUID")
+    #     repFormat2_uuid.text = "repfmt/5"
+    #     repFormat2_FormatName = SubElement(repFormat2, "FormatName")
+    #     repFormat2_FormatName.text = "Renderable Multi Image"
+    #     repFormat2_priority = SubElement(repFormat2, "Priority")
+    #     repFormat2_priority.text = "2"
+    #     repFormat2_valid = SubElement(repFormat2, "Valid")
+    #     repFormat2_valid.text = "false"
     return refs_dict
 
 def make_content_objects(xip, refs_dict, io_ref, tag, content_description, content_type):
