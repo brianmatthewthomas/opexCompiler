@@ -2,7 +2,7 @@ import os
 import lxml.etree as ET
 import requests
 import getpass
-import opexCreator
+from opexCreator import opexCreator
 
 def login(url, payload):
     auth = requests.post(url, data=payload).json()

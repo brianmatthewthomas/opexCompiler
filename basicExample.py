@@ -1,4 +1,4 @@
-import opexCreator
+from opexCreator import opexCreator
 import getpass
 username = input("username: ")
 prefix = input("prefix: ")
