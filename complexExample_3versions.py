@@ -2,7 +2,7 @@ import os
 import lxml.etree as ET
 import requests
 import getpass
-from opexCreator import opexCreator
+from opexCreator import opexCreator_3versions
 
 def login(url, payload):
     auth = requests.post(url, data=payload).json()
@@ -32,8 +32,9 @@ namespaces = {'xip': 'http://preservica.com/XIP/v6.2',
 
 print("warning: the directory structure of the preservation and access files must match exactly once you pass the root level")
 #inputs
-dirpath1 = input("root filepath to access files: ")
+dirpath1 = input("root filepath to primary access files: ")
 dirpath2 = input("root filepath to preservation files: ")
+dirpathA = input("root filepath to secondary NOT rendered access files: ")
 standardDir = input("baseline UUID to put the files: ")
 suffixCount = int(input("Number of characters for subfiles: "))
 object_type = input("type of thing, choose between 'film' and 'multi-page document': ")
@@ -50,7 +51,8 @@ baseline_valuables = {'username': username,
              'password': password,
              'tenent': tenancy,
              'prefix': prefix,
-             'access_directory': dirpath1,
+             'access1_directory': dirpathA,
+             'access2_directory': dirpath1,
              'preservation_directory': dirpath2,
              'asset_title': '',
              'asset_tag': 'open',
@@ -78,9 +80,11 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
                 # musical chairs with directory paths so we don't mess up the original variable values
                 dirpath3 = dirpath
                 dirpath5 = dirpath.replace(dirpath1, dirpath2)
+                dirpathB = dirpath5.replace(dirpath1,dirpathA)
                 dirpath4 = dirpath1 + "/" + valuables['asset_title']
                 math = len(valuables['asset_title']) + 1
-                valuables['access_directory'] = dirpath3
+                valuables['access2_directory'] = dirpath3
+                valuables['access1_directory'] = dirpathB
                 valuables['preservation_directory'] = dirpath5
                 if dirpath4 != dirpath3:
                     print("not a root asset, sending to subfolder")
@@ -88,7 +92,7 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
                     print("drectory title:", dirTitle)
                     if dirTitle == secondaryTitle:
                         valuables['parent_uuid'] = secondaryDir
-                        opexCreator.multi_upload_withXIP(valuables)
+                        opexCreator_3versions.multi_upload_withXIP(valuables)
                     if dirTitle != secondaryTitle:
                         print("directory doesn't exist yet, creating it")
                         headers = login(url, payload)
@@ -113,9 +117,9 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
                         else:
                             print("no metadata file for the directory")
                         secondaryTitle = dirTitle
-                        opexCreator.multi_upload_withXIP(valuables)
+                        opexCreator_3versions.multi_upload_withXIP(valuables)
                 else:
-                    opexCreator.multi_upload_withXIP(valuables)
+                    opexCreator_3versions.multi_upload_withXIP(valuables)
                 counter1 += 1
                 log.write(valuables['asset_title'] + " upload complete" + "\n")
             else:
