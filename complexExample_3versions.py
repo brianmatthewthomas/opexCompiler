@@ -80,7 +80,7 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
                 # musical chairs with directory paths so we don't mess up the original variable values
                 dirpath3 = dirpath
                 dirpath5 = dirpath.replace(dirpath1, dirpath2)
-                dirpathB = dirpath5.replace(dirpath1,dirpathA)
+                dirpathB = dirpath.replace(dirpath1,dirpathA)
                 dirpath4 = dirpath1 + "/" + valuables['asset_title']
                 math = len(valuables['asset_title']) + 1
                 valuables['access2_directory'] = dirpath3

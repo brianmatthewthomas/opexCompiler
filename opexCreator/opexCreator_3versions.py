@@ -361,6 +361,7 @@ def make_opex(valuables, filename2):
         with open(valuables['metadata_file'], 'r') as f:
             filedata = f.read()
             filedata = filedata.replace('<?xml version="1.0" encoding="UTF-8"?>', "")
+            filedata = filedata.replace('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', "")
             with open(export_file, "r") as r:
                 fileinfo = r.read()
                 fileinfo = fileinfo.replace("This is where the metadata goes",filedata)
