@@ -84,7 +84,7 @@ def multi_upload_withXIP(valuables):
         asset_description = valuables['asset_title']
     # initiate creating xml file
     xip = Element('XIP')
-    xip.set('xmlns', 'http://preservica.com/XIP/v6.2')
+    xip.set('xmlns', 'http://preservica.com/XIP/v6.3')
     io = SubElement(xip, 'InformationObject')
     ref = SubElement(io, 'Ref')
     ref.text = str(uuid.uuid4())
@@ -343,9 +343,16 @@ def uploader(valuables):
                                           Callback=ProgressPercentage(sip_name), Config=transfer_config)
             switch = 3
             print("\n", "upload successful")
+            copy = False
         except:
             print("upload failure, trying again")
             switch += 1
+            copy = True
+    if copy is True:
+        newFile = sip_name.split("/")[-1]
+        newFile = "/sf_transfer_agent/" + newFile
+        shutil.copyfile(sip_name,newFile + ".fail")
+        os.rename(newFile + ".fail",newFile)
 
 def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
     representation = SubElement(xip, 'Representation')

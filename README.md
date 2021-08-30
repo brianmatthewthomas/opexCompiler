@@ -47,3 +47,5 @@ If you use a different security tag for different types of files, such as `Digit
 
 `basicExample.py` is a straight example invocation of the process.
 `complexExample.py` is a complicated example of how you can leverage this tool to create an iterator that will crawl a directory to create assets as appropriate. The basic assumption of this script/program is that you put all the files for one manifestation of the object in a single folder and that if you have metadata files you use the convention of .metadata for the file.
+
+The opexCreator is set to dump a failed api upload to a transfer agent for other upload. For this to work you need to designate the folder in the `opexCreator.py` around line 353 and the `opexCreator_3versions.py` around line 411. It is default set to "/media/sf_transfer_agent" because that is how the author designated the link to the location of the transfer agent in his virtual machine.
