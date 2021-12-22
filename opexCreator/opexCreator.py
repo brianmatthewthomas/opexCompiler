@@ -5,6 +5,7 @@ import shutil
 import sys
 import threading
 import uuid
+import time
 from os import listdir
 from os.path import isfile, join
 from xml.dom import minidom
@@ -110,6 +111,10 @@ def multi_upload_withXIP(valuables):
                 checksum1 = create_sha256(filename1)
                 if filename.split(".")[-1] == "srt":
                     filename2 = os.path.join(access_representation, "English", filename)
+                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
+                    filename2 = os.path.join(access_representation, "English", filename)
+                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+                    filename2 = os.path.join(access_representation, "Spanish", filename)
                 elif filename.endswith(tuple(["mp4","m4v","mov"])):
                     filename2 = os.path.join(access_representation, "Movie", filename)
                 else:
@@ -131,6 +136,10 @@ def multi_upload_withXIP(valuables):
                 checksum1 = create_sha256(filename1)
                 if filename.split(".")[-1] == "srt":
                     filename2 = os.path.join(preservation_representation, "English", filename)
+                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
+                    filename2 = os.path.join(preservation_representation, "English", filename)
+                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+                    filename2 = os.path.join(preservation_representation, "Spanish", filename)
                 elif filename.endswith(tuple(["mp4","m4v","mov"])):
                     filename2 = os.path.join(preservation_representation, "Movie", filename)
                 else:
@@ -216,6 +225,10 @@ def multi_upload(valuables):
                 checksum1 = create_sha256(filename1)
                 if filename.split(".")[-1] == "srt":
                     filename2 = os.path.join(access_representation, "English", filename)
+                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
+                    filename2 = os.path.join(access_representation, "English", filename)
+                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+                    filename2 = os.path.join(access_representation, "Spanish", filename)
                 elif filename.endswith(tuple(["mp4","m4v","mov"])):
                     filename2 = os.path.join(access_representation, "Movie", filename)
                 else:
@@ -237,6 +250,10 @@ def multi_upload(valuables):
                 checksum1 = create_sha256(filename1)
                 if filename.split(".")[-1] == "srt":
                     filename2 = os.path.join(preservation_representation, "English", filename)
+                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
+                    filename2 = os.path.join(preservation_representation, "English", filename)
+                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+                    filename2 = os.path.join(preservation_representation, "Spanish", filename)
                 elif filename.endswith(tuple(["mp4","m4v","mov"])):
                     filename2 = os.path.join(preservation_representation, "Movie", filename)
                 else:
@@ -353,6 +370,10 @@ def uploader(valuables):
         newFile = "/sf_transfer_agent/" + newFile
         shutil.copyfile(sip_name,newFile + ".fail")
         os.rename(newFile + ".fail",newFile)
+        print("package copied to transfer agent, waiting for that to finish the upload")
+        while isfile(newFile):
+            time.sleep(30)
+        print("transfer agent upload done, moving on")
 
 def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
     representation = SubElement(xip, 'Representation')
@@ -417,6 +438,10 @@ def make_content_objects(xip, refs_dict, io_ref, tag, content_description, conte
         title = SubElement(content_object, 'Title')
         if filename.split(".")[-1] == "srt":
             title.text = "English"
+        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
+            title.text = "English"
+        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+            title.text = "Spanish"
         elif filename.endswith(tuple(["mp4", "m4v", "mov"])):
             title.text = "Movie"
         else:
@@ -446,6 +471,10 @@ def make_generation(xip, refs_dict, generation_label):
         bitstream = SubElement(bitstreams, "Bitstream")
         if filename.split(".")[-1] == "srt":
             bitstream.text = "Representation_" + generation_label[:-1] + "/English/" + filename
+        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
+            bitstream.text = "Representation_" + generation_label[:-1] + "/English/" + filename
+        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+            bitstream.text = "Representation_" + generation_label[:-1] + "/Spanish/" + filename
         elif filename.endswith(tuple(["mp4", "m4v", "mov"])):
             bitstream.text = "Representation_" + generation_label[:-1] + "/Movie/" + filename
         else:
@@ -465,6 +494,10 @@ def make_bitstream(xip, refs_dict, root_path, generation_label, representation_l
         physloc = SubElement(bitstream, "PhysicalLocation")
         if filename.split(".")[-1] == "srt":
             physloc.text = "Representation_" + generation_label[:-1] + "/English"
+        elif filename.split(".")[-1] == "vtt" and filename.split(".")-[-2] == "en":
+            physloc.text = "Representation_" + generation_label[:-1] + "/English"
+        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+            physloc.text = "Representation_" + generation_label[:-1] + "/Spanish"
         elif filename.endswith(tuple(["mp4", "m4v", "mov"])):
             physloc.text = "Representation_" + generation_label[:-1] + "/Movie"
         else:
