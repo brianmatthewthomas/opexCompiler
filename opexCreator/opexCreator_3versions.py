@@ -1,4 +1,4 @@
-import datetime
+﻿import datetime
 import hashlib
 import os
 import shutil
@@ -408,11 +408,12 @@ def create_sha256(filename):
 def uploader(valuables):
     token = new_token(valuables['username'], valuables['password'], valuables['tenent'], valuables['prefix'])
     print(token)
+    current = time.asctime()
     user_tenant = valuables['tenent']
     user_domain = valuables['prefix']
     bucket = f'{user_tenant.lower()}.package.upload'
     endpoint = f'https://{user_domain}.preservica.com/api/s3/buckets'
-    print(f'Uploading to Preservica: using s3 bucket {bucket}')
+    print(f'Uploading to Preservica: using s3 bucket {bucket} at {current}')
     client = boto3.client('s3', endpoint_url=endpoint, aws_access_key_id=token, aws_secret_access_key="NOT USED",
                           config=Config(s3={'addressing_style': 'path'}))
     sip_name = valuables['compiled_opex']
@@ -423,20 +424,28 @@ def uploader(valuables):
             response = client.upload_file(sip_name, bucket, valuables['asset_id'] + ".zip", ExtraArgs=metadata,
                                           Callback=ProgressPercentage(sip_name), Config=transfer_config)
             switch = 3
-            print("\n", "upload successful")
+            current = time.asctime()
+            print("\n", f"upload successful at {current}")
             copy = False
         except:
-            print("upload failure, trying again")
+            current = time.asctime()
+            print(f"upload failure, trying again at {current}")
             switch += 1
             copy = True
     if copy is True:
+        current = time.asctime()
         newFile = sip_name.split("/")[-1]
-        newFile = "/sf_transfer_agent/" + newFile
+        newFile = "/media/sf_transfer_agent/" + newFile
+        print(f"API uploads failed, copying to transfer agent at {current}")
         shutil.copyfile(sip_name,newFile + ".fail")
         os.rename(newFile + ".fail",newFile)
-        print("package copied to transfer agent, waiting for that to finish the upload")
+        current = time.asctime()
+        print(f"package copied to transfer agent as of {current}, waiting for that to finish the upload")
+        print("")
         while isfile(newFile):
             time.sleep(30)
+            current = time.asctime()
+            print(f"still waiting as of {current}", "\r")
         print("transfer agent upload done, moving on")
 
 def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
