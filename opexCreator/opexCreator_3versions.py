@@ -68,6 +68,8 @@ def new_token(username, password, tenent, prefix):
 # using a dictionary to pass data to the multipart upload script for simplicity of coding, can also include as individual variables
 def multi_upload_withXIP(valuables):
     toDelete = []
+    current = time.asctime()
+    print(f'starting multi-part upload process at {current}')
     # unpack the dictionary to individual variables
     access1_directory = valuables['access1_directory']
     access2_directory = valuables['access2_directory']
@@ -218,12 +220,16 @@ def multi_upload_withXIP(valuables):
     tempy = export_dir + "/temp"
     os.makedirs(tempy, exist_ok=True)
     archive_name = export_dir + "/" + asset_title + ".pax"
+    current = time.asctime()
+    print(f'making preliminary pax file as of {current}')
     shutil.make_archive(archive_name, "zip", pax_folder)
     archive_name = archive_name + ".zip"
     archive_name2 = archive_name.replace(export_dir, tempy)
     shutil.move(archive_name,archive_name2)
     make_opex(valuables, archive_name2)
     compiled_opex = export_dir + "/" + asset_id
+    current = time.asctime()
+    print(f'making opex file as of {current}')
     shutil.make_archive(compiled_opex, "zip", tempy)
     compiled_opex = compiled_opex + ".zip"
     valuables['compiled_opex'] = compiled_opex
@@ -244,6 +250,8 @@ def multi_upload_withXIP(valuables):
 def multi_upload(valuables):
     # a trimmed down version of the version with XIP, because we honestly don't need the fluff
     toDelete = []
+    current = time.asctime()
+    print(f'starting multi-part upload at {current}')
     # unpack the dictionary to individual variables
     access1_directory = valuables['access1_directory']
     access2_directory = valuables['access2_directory']
@@ -335,12 +343,16 @@ def multi_upload(valuables):
     tempy = export_dir + "/temp"
     os.makedirs(tempy, exist_ok=True)
     archive_name = export_dir + "/" + asset_title + ".pax"
+    current = time.asctime()
+    print(f'making preliminary pax file as of {current}')
     shutil.make_archive(archive_name, "zip", pax_folder)
     archive_name = archive_name + ".zip"
     archive_name2 = archive_name.replace(export_dir, tempy)
     shutil.move(archive_name,archive_name2)
     make_opex(valuables, archive_name2)
     compiled_opex = export_dir + "/" + asset_id
+    current = time.asctime()
+    print(f'making opex file as of {current}')
     shutil.make_archive(compiled_opex, "zip", tempy)
     compiled_opex = compiled_opex + ".zip"
     valuables['compiled_opex'] = compiled_opex
