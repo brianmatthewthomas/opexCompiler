@@ -457,7 +457,7 @@ def uploader(valuables):
         while isfile(newFile):
             time.sleep(30)
             current = time.asctime()
-            print(f"still waiting as of {current}", "\r")
+            print(f"still waiting as of {current}", end="\r")
         print("transfer agent upload done, moving on")
 
 def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
