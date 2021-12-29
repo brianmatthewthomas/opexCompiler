@@ -418,6 +418,11 @@ def create_sha256(filename):
     return fixity
 
 def uploader(valuables):
+    filelist = ["/media/sf_transfer_agent/nothing.txt"]
+    with open("./transfer_agent_list.txt", "r") as r:
+        for line in r:
+            line = line[:-1]
+            filelist.append(line)
     token = new_token(valuables['username'], valuables['password'], valuables['tenent'], valuables['prefix'])
     print(token)
     current = time.asctime()
@@ -449,16 +454,20 @@ def uploader(valuables):
         newFile = sip_name.split("/")[-1]
         newFile = "/media/sf_transfer_agent/" + newFile
         print(f"API uploads failed, copying to transfer agent at {current}")
+        print("checking transfer agent for any lingering files first")
+        for item in filelist:
+            while isfile(item):
+                current = time.asctime()
+                print(f"waiting on {item} to finish as of {current}", end="\r")
+                time.sleep(30)
+            print(f"{item} has already cleared transfer agent")
         shutil.copyfile(sip_name,newFile + ".fail")
         os.rename(newFile + ".fail",newFile)
         current = time.asctime()
-        print(f"package copied to transfer agent as of {current}, waiting for that to finish the upload")
-        print("")
-        while isfile(newFile):
-            time.sleep(30)
-            current = time.asctime()
-            print(f"still waiting as of {current}", end="\r")
-        print("transfer agent upload done, moving on")
+        print(f"package copied to transfer agent as of {current}, moving on")
+        with open("./transfer_agent_list.txt", "a") as w:
+            w.write(newFile + "\n")
+        w.close()
 
 def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
     representation = SubElement(xip, 'Representation')

@@ -21,12 +21,13 @@ url = f"https://{prefix}.preservica.com/api/accesstoken/login"
 print("testing login...")
 headers = login(url, payload)
 print(headers)
+version = input("preservica version in play?: ")
 
 # namespaces to parse xml
-namespaces = {'xip': 'http://preservica.com/XIP/v6.2',
-              'EntityResponse': 'http://preservica.com/EntityAPI/v6.2',
-              'ChildrenResponse': 'http://preservica.com/EntityAPI/v6.2',
-              'MetadataResponse': 'http://preservica.com/EntityAPI/v6.2',
+namespaces = {'xip': f'http://preservica.com/XIP/v{version}',
+              'EntityResponse': f'http://preservica.com/EntityAPI/v{version}',
+              'ChildrenResponse': f'http://preservica.com/EntityAPI/v{version}',
+              'MetadataResponse': f'http://preservica.com/EntityAPI/v{version}',
               'dcterms': 'http://dublincore.org/documents/dcmi-terms',
               'tslac': 'https://www.tsl.texas.gov/'}
 
@@ -92,7 +93,7 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
                     if dirTitle != secondaryTitle:
                         print("directory doesn't exist yet, creating it")
                         headers = login(url, payload)
-                        data = '<StructuralObject xmlns="http://preservica.com/XIP/v6.2"><Title>' + dirTitle + '</Title><Description>' + dirTitle + '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + '</Parent></StructuralObject>'
+                        data = f'<StructuralObject xmlns="http://preservica.com/XIP/v{version}"><Title>' + dirTitle + '</Title><Description>' + dirTitle + '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + '</Parent></StructuralObject>'
                         response = requests.post(base_url, headers=headers, data=data)
                         status = response.status_code
                         print(status)
@@ -120,6 +121,11 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
                 log.write(valuables['asset_title'] + " upload complete" + "\n")
             else:
                 continue
+if os.path.isfile("./transfer_agent_list.txt"):
+    try:
+        os.remove("./transfer_agent_list.txt")
+    except:
+        print("unable to remove ./transfer_agent_list.txt, please delete manually")
 log.close()
 print("all done")
 print(counter1, "successes")

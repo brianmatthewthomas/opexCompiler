@@ -125,6 +125,11 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
                 log.write(valuables['asset_title'] + " upload complete" + "\n")
             else:
                 continue
+if os.path.isfile("./transfer_agent_list.txt"):
+    try:
+        os.remove("./transfer_agent_list.txt")
+    except:
+        print("unable to remove ./transfer_agent_list.txt, please delete manually")
 log.close()
 print("all done")
 print(counter1, "successes")

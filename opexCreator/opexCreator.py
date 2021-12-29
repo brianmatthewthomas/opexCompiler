@@ -342,13 +342,19 @@ def create_sha256(filename):
     return fixity
 
 def uploader(valuables):
+    filelist = ["/media/sf_transfer_agent/nothing.txt"]
+    with open("./transfer_agent_list.txt", "r") as r:
+        for line in r:
+            line = line[:-1]
+            filelist.append(line)
     token = new_token(valuables['username'], valuables['password'], valuables['tenent'], valuables['prefix'])
     print(token)
+    current = time.asctime()
     user_tenant = valuables['tenent']
     user_domain = valuables['prefix']
     bucket = f'{user_tenant.lower()}.package.upload'
     endpoint = f'https://{user_domain}.preservica.com/api/s3/buckets'
-    print(f'Uploading to Preservica: using s3 bucket {bucket}')
+    print(f'Uploading to Preservica: using s3 bucket {bucket} at {current}')
     client = boto3.client('s3', endpoint_url=endpoint, aws_access_key_id=token, aws_secret_access_key="NOT USED",
                           config=Config(s3={'addressing_style': 'path'}))
     sip_name = valuables['compiled_opex']
@@ -359,21 +365,33 @@ def uploader(valuables):
             response = client.upload_file(sip_name, bucket, valuables['asset_id'] + ".zip", ExtraArgs=metadata,
                                           Callback=ProgressPercentage(sip_name), Config=transfer_config)
             switch = 3
-            print("\n", "upload successful")
+            current = time.asctime()
+            print("\n", f"upload successful at {current}")
             copy = False
         except:
-            print("upload failure, trying again")
+            current = time.asctime()
+            print(f"upload failure, trying again at {current}")
             switch += 1
             copy = True
     if copy is True:
+        current = time.asctime()
         newFile = sip_name.split("/")[-1]
-        newFile = "/sf_transfer_agent/" + newFile
+        newFile = "/media/sf_transfer_agent/" + newFile
+        print(f"API uploads failed, copying to transfer agent at {current}")
+        print("checking transfer agent for any lingering files first")
+        for item in filelist:
+            while isfile(item):
+                current = time.asctime()
+                print(f"waiting on {item} to finish as of {current}", end="\r")
+                time.sleep(30)
+            print(f"{item} has already cleared transfer agent")
         shutil.copyfile(sip_name,newFile + ".fail")
         os.rename(newFile + ".fail",newFile)
-        print("package copied to transfer agent, waiting for that to finish the upload")
-        while isfile(newFile):
-            time.sleep(30)
-        print("transfer agent upload done, moving on")
+        current = time.asctime()
+        print(f"package copied to transfer agent as of {current}, moving on")
+        with open("./transfer_agent_list.txt", "a") as w:
+            w.write(newFile + "\n")
+        w.close()
 
 def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
     representation = SubElement(xip, 'Representation')
