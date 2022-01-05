@@ -2,6 +2,8 @@ import os
 import lxml.etree as ET
 import requests
 import getpass
+
+import opexCreator.opexCreator
 from opexCreator import opexCreator_3versions
 
 def login(url, payload):
@@ -43,6 +45,13 @@ dirpathA = input("subfolder for secondary access files: ")
 standardDir = input("baseline UUID to put the files: ")
 suffixCount = int(input("Number of characters for subfiles: "))
 object_type = input("type of thing, choose between 'film' and 'multi-page document': ")
+delay = input("delay between uploads in number of seconds: ")
+while isinstance(delay, int) is False:
+    try:
+        delay = int(delay)
+    except:
+        print("the delay must be an integer, try again. if no delay input zero")
+        delay = input("delay between uploads in number of seconds: ")
 # computer section
 base_url = f"https://{prefix}.preservica.com/api/entity/structural-objects/"
 dirLength = len(dirpath1) + 1
@@ -128,6 +137,9 @@ for dirpath, dirnames, filenames in os.walk(rooty):
                     else:
                         opexCreator_3versions.multi_upload_withXIP(valuables)
                     counter1 += 1
+                    print(counter1,"units uploaded thus far")
+                    if delay > 0:
+                        opexCreator.opexCreator.countdown(delay)
                     log.write(valuables['asset_title'] + " upload complete" + "\n")
                 else:
                     continue

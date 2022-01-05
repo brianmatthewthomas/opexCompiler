@@ -527,3 +527,13 @@ def make_bitstream(xip, refs_dict, root_path, generation_label, representation_l
         fixityValue = SubElement(fixity, "FixityValue")
         fixityValue.text = create_sha256(fullPath)
 
+def countdown(t):
+    mins, secs = divmod(t, 60)
+    timer1 = '{:02d}:{:02d}'.format(mins, secs)
+    while t:
+        mins, secs = divmod(t, 60)
+        timer = '{:02d}:{:02d}'.format(mins, secs)
+        print("waiting",timer1," minutes to let the system process upload:",timer, end="\r")
+        time.sleep(1)
+        t-= 1
+    print("moving to next one")
