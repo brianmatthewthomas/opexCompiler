@@ -343,6 +343,8 @@ def create_sha256(filename):
 
 def uploader(valuables):
     filelist = ["/media/sf_transfer_agent/nothing.txt"]
+    logger = open("./transfer_agent_list.txt", "a")
+    logger.close()
     with open("./transfer_agent_list.txt", "r") as r:
         for line in r:
             line = line[:-1]
