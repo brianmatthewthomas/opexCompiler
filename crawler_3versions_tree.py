@@ -91,8 +91,14 @@ for dirpath, dirnames, filenames in os.walk(rooty):
                     fileLength = len(filename)
                     filename = os.path.join(dirpath, filename)
                     metadata_file = os.path.join(dirpath, valuables['asset_title'] + ".metadata")
+                    metadata_file2 = metadata_file.replace(dirpath1,dirpath2)
+                    metadata_file3 = metadata_file.replace(dirpath1,dirpathA)
                     if os.path.isfile(metadata_file):
                         valuables['metadata_file'] = metadata_file
+                    elif os.path.isfile(metadata_file2):
+                        valuables['metadata_file'] = metadata_file2
+                    elif os.path.isfile(metadata_file3):
+                        valuables['metadata_file'] = metadata_file3
                     # musical chairs with directory paths so we don't mess up the original variable values
                     dirpath3 = dirpath
                     dirpath5 = dirpath.replace(dirpath1, dirpath2)
