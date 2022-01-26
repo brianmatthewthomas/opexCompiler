@@ -2,6 +2,7 @@ import os
 import lxml.etree as ET
 import requests
 import getpass
+import configparser
 from opexCreator import opexCreator_3versions
 
 def login(url, payload):
@@ -33,12 +34,32 @@ namespaces = {'xip': f'http://preservica.com/XIP/v{version}',
 
 print("warning: the directory structure of the preservation and access files must match exactly once you pass the root level")
 #inputs
-dirpath1 = input("root filepath to primary access files: ")
-dirpath2 = input("root filepath to preservation files: ")
-dirpathA = input("root filepath to secondary NOT rendered access files: ")
-standardDir = input("baseline UUID to put the files: ")
-suffixCount = int(input("Number of characters for subfiles: "))
-object_type = input("type of thing, choose between 'film' and 'multi-page document': ")
+configuration = input("use config file? yes/no: ")
+if configuration == "yes":
+    config = configparser.ConfigParser()
+    configfile = input("name of config file using relative filepath: ")
+    config.read(configfile)
+    dirpath1 = config.get('3_version_crawler','presentation_folder')
+    dirpath2 = config.get('3_version_crawler','preservation_folder')
+    dirpathA = config.get('3_version_crawler','intermediary_folder')
+    standardDir = config.get('general','standard_directory_uuid')
+    suffixCount = int(config.get('general','suffix_count'))
+    object_type = config.get('general','object_type')
+    delay = int(config.get('general','delay'))
+if configuration == "no":
+    dirpath1 = input("root filepath to access files: ")
+    dirpath2 = input("root filepath to preservation files: ")
+    dirpathA = input("root filepath to secondary NOT rendered access files: ")
+    standardDir = input("baseline UUID to put the files: ")
+    suffixCount = int(input("Number of characters for subfiles: "))
+    object_type = input("type of thing, choose between 'film' and 'multi-page document': ")
+    delay = input("delay between uploads in number of seconds: ")
+    while isinstance(delay, int) is False:
+        try:
+            delay = int(delay)
+        except:
+            print("the delay must be an integer, try again. if no delay input zero")
+            delay = input("delay between uploads in number of seconds: ")
 # computer section
 base_url = f"https://{prefix}.preservica.com/api/entity/structural-objects/"
 dirLength = len(dirpath1) + 1

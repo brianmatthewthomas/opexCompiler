@@ -1,0 +1,20 @@
+#NOTE: folders need to be relative to where you start the program or absolute! NOT NOT NOT based on where this config file lives
+#NOTE: you will need to enter the config file relative filepath when accessing it.
+[general]
+preservica_version = 6.4
+standard_directory_uuid = e2b2c805-3754-4810-a93a-af299637cc2f
+suffix_count = 3
+object_type = multi-page document
+delay = 120
+[2_version_crawler]
+preservation_folder = ../2-wayStaging/preservica_preservation1_lnk
+presentation_folder = ../2-wayStaging/preservica_presentation2_lnk
+[3_version_crawler]
+preservation_folder = ../1976085/preservica_preservation1_lnk
+intermediary_folder = ../1976085/preservica_presentation2_lnk
+presentation_folder = ../1976085/preservica_presentation3_lnk
+[3_version_crawler_tree]
+root_folder =
+preservation_folder =
+intermediary_folder =
+presentation_folder =

@@ -2,7 +2,7 @@ import os
 import lxml.etree as ET
 import requests
 import getpass
-
+import configparser
 import opexCreator.opexCreator
 from opexCreator import opexCreator_3versions
 
@@ -38,20 +38,34 @@ print("main presentation: myDocument/presentation2/myDocument.pdf")
 print("intermediary presentation: myDocument/presentation1/myDocument1.jpg myDocument2.jpg, etc.")
 print("preservation master: myDocument/preservation1/myDocument1.tif myDocument2.tif, etc.")
 #inputs
-rooty = input("root filepath to crawl: ")
-dirpath1 = input("subfolder for primary access files: ")
-dirpath2 = input("subfolder for preservation files: ")
-dirpathA = input("subfolder for secondary access files: ")
-standardDir = input("baseline UUID to put the files: ")
-suffixCount = int(input("Number of characters for subfiles: "))
-object_type = input("type of thing, choose between 'film' and 'multi-page document': ")
-delay = input("delay between uploads in number of seconds: ")
-while isinstance(delay, int) is False:
-    try:
-        delay = int(delay)
-    except:
-        print("the delay must be an integer, try again. if no delay input zero")
-        delay = input("delay between uploads in number of seconds: ")
+configuration = input("use config file? yes/no: ")
+if configuration == "yes":
+    config = configparser.ConfigParser()
+    configfile = input("name of config file using relative filepath: ")
+    config.read(configfile)
+    rooty = config.get('3_version_crawler_tree','root_folder')
+    dirpath1 = config.get('3_version_crawler_tree','presentation_folder')
+    dirpath2 = config.get('3_version_crawler_tree','preservation_folder')
+    dirpathA = config.get('3_version_crawler_tree','intermediary_folder')
+    standardDir = config.get('general','standard_directory_uuid')
+    suffixCount = int(config.get('general','suffix_count'))
+    object_type = config.get('general','object_type')
+    delay = int(config.get('general','delay'))
+if configuration == "no":
+    rooty = input("root filepath to crawl: ")
+    dirpath1 = input("root filepath to access files: ")
+    dirpath2 = input("root filepath to preservation files: ")
+    dirpathA = input("subfolder for secondary access files: ")
+    standardDir = input("baseline UUID to put the files: ")
+    suffixCount = int(input("Number of characters for subfiles: "))
+    object_type = input("type of thing, choose between 'film' and 'multi-page document': ")
+    delay = input("delay between uploads in number of seconds: ")
+    while isinstance(delay, int) is False:
+        try:
+            delay = int(delay)
+        except:
+            print("the delay must be an integer, try again. if no delay input zero")
+            delay = input("delay between uploads in number of seconds: ")
 # computer section
 base_url = f"https://{prefix}.preservica.com/api/entity/structural-objects/"
 dirLength = len(dirpath1) + 1
