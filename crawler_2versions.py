@@ -36,7 +36,7 @@ print("warning: the directory structure of the preservation and access files mus
 #inputs
 configuration = input("use config file? yes/no: ")
 if configuration == "yes":
-    config = configparser.Configparser()
+    config = configparser.ConfigParser()
     configfile = input("name of config file using relative filepath: ")
     config.read(configfile)
     dirpath1 = config.get('2_version_crawler','presentation_folder')
