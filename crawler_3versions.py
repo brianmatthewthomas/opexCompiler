@@ -112,11 +112,11 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
                         config.read(configfile)
                         quiet_start = config.get('general','quiet_start')
                         quiet_start = quiet_start.split(":")
-                        quiet_start = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
+                        valuables['quiet_start'] = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
                         quiet_end = config.get('general','quiet_end')
                         quiet_end = quiet_end.split(":")
-                        quiet_end = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
-                        interval = int(config.get('general','interval'))
+                        valuables['quiet_end'] = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
+                        valuables['interval'] = int(config.get('general','interval'))
                     else:
                         valuables['quiet_start'] = quiet_start
                         valuables['quiet_end'] = quiet_end
