@@ -38,6 +38,7 @@ print("main presentation: myDocument/presentation2/myDocument.pdf")
 print("intermediary presentation: myDocument/presentation1/myDocument1.jpg myDocument2.jpg, etc.")
 print("preservation master: myDocument/preservation1/myDocument1.tif myDocument2.tif, etc.")
 #inputs
+quiet_time = bool(input("implement quiet time? use True/False: "))
 configuration = input("use config file? yes/no: ")
 if configuration == "yes":
     config = configparser.ConfigParser()
@@ -51,6 +52,14 @@ if configuration == "yes":
     suffixCount = int(config.get('general','suffix_count'))
     object_type = config.get('general','object_type')
     delay = int(config.get('general','delay'))
+    if quiet_time is True:
+        quiet_start = config.get('general','quiet_start')
+        quiet_start = quiet_start.split(":")
+        quiet_start = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
+        quiet_end = config.get('general','quiet_end')
+        quiet_end = quiet_end.split(":")
+        quiet_end = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
+        interval = int(config.get('general','interval'))
 if configuration == "no":
     rooty = input("root filepath to crawl: ")
     dirpath1 = input("root filepath to access files: ")
@@ -66,6 +75,14 @@ if configuration == "no":
         except:
             print("the delay must be an integer, try again. if no delay input zero")
             delay = input("delay between uploads in number of seconds: ")
+    if quiet_time is True:
+        quiet_start = input("input quiet time start as hh:mm:ss:")
+        quiet_start = quiet_start.split(":")
+        quiet_start = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
+        quiet_end = input("input quiet time end as hh:mm:ss: ")
+        quiet_end = quiet_end.split(":")
+        quiet_end = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
+        interval = int(input("time in seconds between checking if sleep timer condition has been met: "))
 # computer section
 base_url = f"https://{prefix}.preservica.com/api/entity/structural-objects/"
 dirLength = len(dirpath1) + 1
@@ -94,10 +111,23 @@ setup = ""
 for dirpath, dirnames, filenames in os.walk(rooty):
     for filename in filenames:
         valuables = baseline_valuables
-        print(dirpath)
         if dirpath1 in str(dirpath):
             if not filename.endswith((".metadata")):
                 if dirpath != setup:
+                    if quiet_time is True:
+                        if configuration == "yes":
+                            config.read(configfile)
+                            quiet_start = config.get('general','quiet_start')
+                            quiet_start = quiet_start.split(":")
+                            quiet_start = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
+                            quiet_end = config.get('general','quiet_end')
+                            quiet_end = quiet_end.split(":")
+                            quiet_end = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
+                            interval = int(config.get('general','interval'))
+                        else:
+                            valuables['quiet_start'] = quiet_start
+                            valuables['quiet_end'] = quiet_end
+                            valuables['interval'] = interval
                     setup = dirpath
                     valuables['asset_title'] = dirpath.split("/")[-2]
                     print(valuables['asset_title'])

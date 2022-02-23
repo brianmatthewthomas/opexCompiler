@@ -6,6 +6,9 @@ standard_directory_uuid = e2b2c805-3754-4810-a93a-af299637cc2f
 suffix_count = 3
 object_type = multi-page document
 delay = 120
+quiet_start =
+quiet_end =
+interval =
 [2_version_crawler]
 preservation_folder = ../2-wayStaging/preservica_preservation1_lnk
 presentation_folder = ../2-wayStaging/preservica_presentation2_lnk

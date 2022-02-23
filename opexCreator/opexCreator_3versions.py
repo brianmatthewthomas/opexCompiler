@@ -17,6 +17,8 @@ import requests
 from boto3.s3.transfer import TransferConfig
 from botocore.config import Config
 
+import opexCreator.opexCreator
+
 GB = 1024 ** 3
 transfer_config = TransferConfig(multipart_threshold=1 * GB)
 
@@ -421,6 +423,8 @@ def uploader(valuables):
     filelist = ["/media/sf_transfer_agent/nothing.txt"]
     logger = open("./transfer_agent_list.txt", "a")
     logger.close()
+    if 'quiet_start' in valuables:
+        opexCreator.opexCreator.quiet_time(quiet_start=valuables['quiet_start'],quiet_end=valuables['quiet_end'],interval=valuables['interval'])
     with open("./transfer_agent_list.txt", "r") as r:
         for line in r:
             line = line[:-1]

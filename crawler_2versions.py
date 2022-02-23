@@ -35,6 +35,7 @@ namespaces = {'xip': f'http://preservica.com/XIP/v{version}',
 print("warning: the directory structure of the preservation and access files must match exactly once you pass the root level")
 #inputs
 configuration = input("use config file? yes/no: ")
+quiet_time = bool(input("implement quiet time? use True/False: "))
 if configuration == "yes":
     config = configparser.ConfigParser()
     configfile = input("name of config file using relative filepath: ")
@@ -45,6 +46,14 @@ if configuration == "yes":
     suffixCount = int(config.get('general','suffix_count'))
     object_type = config.get('general','object_type')
     delay = int(config.get('general','delay'))
+    if quiet_time is True:
+        quiet_start = config.get('general','quiet_start')
+        quiet_start = quiet_start.split(":")
+        quiet_start = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
+        quiet_end = config.get('general','quiet_end')
+        quiet_end = quiet_end.split(":")
+        quiet_end = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
+        interval = int(config.get('general','interval'))
 if configuration == "no":
     dirpath1 = input("root filepath to access files: ")
     dirpath2 = input("root filepath to preservation files: ")
@@ -58,6 +67,14 @@ if configuration == "no":
         except:
             print("the delay must be an integer, try again. if no delay input zero")
             delay = input("delay between uploads in number of seconds: ")
+    if quiet_time is True:
+        quiet_start = input("input quiet time start as hh:mm:ss:")
+        quiet_start = quiet_start.split(":")
+        quiet_start = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
+        quiet_end = input("input quiet time end as hh:mm:ss: ")
+        quiet_end = quiet_end.split(":")
+        quiet_end = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
+        interval = int(input("time in seconds between checking if sleep timer condition has been met: "))
 # computer section
 base_url = f"https://{prefix}.preservica.com/api/entity/structural-objects/"
 dirLength = len(dirpath1) + 1
@@ -87,6 +104,20 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
         valuables = baseline_valuables
         if not filename.endswith((".metadata")):
             if dirpath != setup:
+                if quiet_time is True:
+                    if configuration == "yes":
+                        config.read(configfile)
+                        quiet_start = config.get('general','quiet_start')
+                        quiet_start = quiet_start.split(":")
+                        quiet_start = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
+                        quiet_end = config.get('general','quiet_end')
+                        quiet_end = quiet_end.split(":")
+                        quiet_end = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
+                        interval = int(config.get('general','interval'))
+                    else:
+                        valuables['quiet_start'] = quiet_start
+                        valuables['quiet_end'] = quiet_end
+                        valuables['interval'] = interval
                 setup = dirpath
                 valuables['asset_title'] = dirpath.split("/")[-1]
                 print(valuables['asset_title'])

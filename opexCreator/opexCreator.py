@@ -345,6 +345,8 @@ def uploader(valuables):
     filelist = ["/media/sf_transfer_agent/nothing.txt"]
     logger = open("./transfer_agent_list.txt", "a")
     logger.close()
+    if 'quiet_start' in valuables:
+        quiet_time(quiet_start=valuables['quiet_start'],quiet_end=valuables['quiet_end'],interval=valuables['interval'])
     with open("./transfer_agent_list.txt", "r") as r:
         for line in r:
             line = line[:-1]
@@ -539,3 +541,13 @@ def countdown(t):
         time.sleep(1)
         t-= 1
     print("moving to next one")
+
+def quiet_time(quiet_start=list,quiet_end=list, interval=int):
+    now = datetime.datetime.now()
+    quiet_1 = now.replace(hour=quiet_start[0], minute=quiet_start[1], second=quiet_start[2])
+    quiet_2 = now.replace(hour=quiet_end[0], minute=quiet_end[1], second=quiet_end[2])
+    while now > quiet_1 and now < quiet_2:
+        print(f"quiet time, waiting until {quiet_2} to resume, sleeping for {interval/60} minutes before checking back")
+        time.sleep(interval)
+        now = datetime.datetime.now()
+        print(f"the current time is {now}")
