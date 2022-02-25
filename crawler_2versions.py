@@ -96,12 +96,14 @@ baseline_valuables = {'username': username,
              'export_directory': './export',
              'asset_description': '',
              'ignore': [".metadata", ".db"],
-             'special_format': object_type}
+             'special_format': object_type,
+                      'quiet_time': False}
 #start
 setup = ""
 for dirpath, dirnames, filenames in os.walk(dirpath1):
     for filename in filenames:
         valuables = baseline_valuables
+        valuables['quiet_time'] = quiet_time
         if not filename.endswith((".metadata")):
             if dirpath != setup:
                 if quiet_time is True:
