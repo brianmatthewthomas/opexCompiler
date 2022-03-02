@@ -38,7 +38,10 @@ print("main presentation: myDocument/presentation2/myDocument.pdf")
 print("intermediary presentation: myDocument/presentation1/myDocument1.jpg myDocument2.jpg, etc.")
 print("preservation master: myDocument/preservation1/myDocument1.tif myDocument2.tif, etc.")
 #inputs
-quiet_time = bool(input("implement quiet time? use True/False: "))
+quiet_time = input("implement quiet time? use yes/no: ")
+if quiet_time == "no":
+    quiet_time = ""
+quiet_time = bool(quiet_time)
 configuration = input("use config file? yes/no: ")
 if configuration == "yes":
     config = configparser.ConfigParser()
@@ -104,9 +107,9 @@ baseline_valuables = {'username': username,
              'parent_uuid': standardDir,
              'export_directory': './export',
              'asset_description': '',
-             'ignore': [".metadata", ".db"],
+             'ignore': [".metadata", ".db", ".md5"],
              'special_format': object_type,
-                      'quiet_time': False}
+                      'quiet_time': quiet_time}
 #start
 setup = ""
 for dirpath, dirnames, filenames in os.walk(rooty):

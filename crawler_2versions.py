@@ -34,8 +34,11 @@ namespaces = {'xip': f'http://preservica.com/XIP/v{version}',
 
 print("warning: the directory structure of the preservation and access files must match exactly once you pass the root level")
 #inputs
+quiet_time = input("implement quiet time? use yes/no: ")
+if quiet_time == "no":
+    quiet_time = ""
+quiet_time = bool(quiet_time)
 configuration = input("use config file? yes/no: ")
-quiet_time = bool(input("implement quiet time? use True/False: "))
 if configuration == "yes":
     config = configparser.ConfigParser()
     configfile = input("name of config file using relative filepath: ")
@@ -106,20 +109,20 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
         valuables['quiet_time'] = quiet_time
         if not filename.endswith((".metadata")):
             if dirpath != setup:
-                if quiet_time is True:
-                    if configuration == "yes":
-                        config.read(configfile)
-                        quiet_start = config.get('general','quiet_start')
-                        quiet_start = quiet_start.split(":")
-                        valuables['quiet_start'] = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
-                        quiet_end = config.get('general','quiet_end')
-                        quiet_end = quiet_end.split(":")
-                        valuables['quiet_end'] = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
-                        valuables['interval'] = int(config.get('general','interval'))
-                    else:
-                        valuables['quiet_start'] = quiet_start
-                        valuables['quiet_end'] = quiet_end
-                        valuables['interval'] = interval
+                    if quiet_time is True:
+                        if configuration == "yes":
+                            config.read(configfile)
+                            quiet_start = config.get('general','quiet_start')
+                            quiet_start = quiet_start.split(":")
+                            valuables['quiet_start'] = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
+                            quiet_end = config.get('general','quiet_end')
+                            quiet_end = quiet_end.split(":")
+                            valuables['quiet_end'] = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
+                            valuables['interval'] = int(config.get('general','interval'))
+                        else:
+                            valuables['quiet_start'] = quiet_start
+                            valuables['quiet_end'] = quiet_end
+                            valuables['interval'] = interval
                 setup = dirpath
                 valuables['asset_title'] = dirpath.split("/")[-1]
                 print(valuables['asset_title'])
