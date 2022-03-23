@@ -345,7 +345,7 @@ def uploader(valuables):
     filelist = ["/media/sf_transfer_agent/nothing.txt"]
     logger = open("./transfer_agent_list.txt", "a")
     logger.close()
-    if valauables['quiet_start'] is True:
+    if valuables['quiet_time'] is True:
         quiet_time(quiet_start=valuables['quiet_start'],quiet_end=valuables['quiet_end'],interval=valuables['interval'])
     with open("./transfer_agent_list.txt", "r") as r:
         for line in r:
