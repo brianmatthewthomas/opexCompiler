@@ -516,7 +516,7 @@ def make_bitstream(xip, refs_dict, root_path, generation_label, representation_l
         physloc = SubElement(bitstream, "PhysicalLocation")
         if filename.split(".")[-1] == "srt":
             physloc.text = "Representation_" + generation_label[:-1] + "/English"
-        elif filename.split(".")[-1] == "vtt" and filename.split(".")-[-2] == "en":
+        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
             physloc.text = "Representation_" + generation_label[:-1] + "/English"
         elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
             physloc.text = "Representation_" + generation_label[:-1] + "/Spanish"
