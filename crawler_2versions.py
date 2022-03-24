@@ -176,7 +176,7 @@ for dirpath, dirnames, filenames in os.walk(dirpath1):
                 counter1 += 1
                 print(counter1,"units uploaded thus far")
                 if delay > 0:
-                    opexCreator.opexCreator.countdown(delay)
+                    opexCreator.countdown(delay)
                 log.write(valuables['asset_title'] + " upload complete" + "\n")
             else:
                 continue
