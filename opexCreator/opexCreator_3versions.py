@@ -69,308 +69,346 @@ def new_token(username, password, tenent, prefix):
 
 # using a dictionary to pass data to the multipart upload script for simplicity of coding, can also include as individual variables
 def multi_upload_withXIP(valuables):
-    toDelete = []
-    current = time.asctime()
-    print(f'starting multi-part upload process at {current}')
-    # unpack the dictionary to individual variables
-    access1_directory = valuables['access1_directory']
-    access2_directory = valuables['access2_directory']
-    preservation_directory = valuables['preservation_directory']
-    asset_title = valuables['asset_title']
-    parent_uuid = valuables['parent_uuid']
-    asset_tag = valuables['asset_tag']
-    export_dir = valuables['export_directory']
-    #set description, fallback to title if missing from dictionary
-    if valuables['asset_description']:
-        if valuables['asset_description'] != None and valuables['asset_description'] != "":
-            asset_description = valuables['asset_description']
-        else:
-            asset_description = valuables['asset_title']
-    else:
-        asset_description = valuables['asset_title']
-    # initiate creating xml file
-    xip = Element('XIP')
-    xip.set('xmlns', 'http://preservica.com/XIP/v6.4')
-    io = SubElement(xip, 'InformationObject')
-    ref = SubElement(io, 'Ref')
-    ref.text = str(uuid.uuid4())
-    valuables['asset_id'] = ref.text
-    asset_id = valuables['asset_id']
-    title = SubElement(io, 'Title')
-    title.text = asset_title
-    description = SubElement(io, 'Description')
-    description.text = asset_description
-    security = SubElement(io, 'SecurityTag')
-    security.text = asset_tag
-    custom_type = SubElement(io, 'CustomType')
-    custom_type.text = ""
-    parent = SubElement(io, 'Parent')
-    parent.text = parent_uuid
-    # copy the files to the export area for processing
-    access1_representation = os.path.join(export_dir, asset_title, "Representation_Access_1")
-    access2_representation = os.path.join(export_dir, asset_title, "Representation_Access_2")
-    preservation_representation = os.path.join(export_dir, asset_title, "Representation_Preservation")
-    for dirpath, dirnames, filenames in os.walk(access1_directory):
-        for filename in filenames:
-            if not filename.endswith(tuple(valuables['ignore'])):
-                filename1 = os.path.join(dirpath, filename)
-                checksum1 = create_sha256(filename1)
-                if filename.split(".")[-1] == "srt":
-                    filename2 = os.path.join(access1_representation, "English", filename)
-                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
-                    filename2 = os.path.join(access1_representation, "English", filename)
-                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
-                    filename2 = os.path.join(access1_representation, "Spanish", filename)
-                elif filename.endswith(tuple(["mp4","m4v","mov"])):
-                    filename2 = os.path.join(access1_representation, "Movie", filename)
+    print("to pause process press 'ctrl+c'. If pausing during zip creation process may inadvertantly abort")
+    finito = 0
+    while finito == 0:
+        try:
+            toDelete = []
+            current = time.asctime()
+            print(f'starting multi-part upload process at {current}')
+            # unpack the dictionary to individual variables
+            access1_directory = valuables['access1_directory']
+            access2_directory = valuables['access2_directory']
+            preservation_directory = valuables['preservation_directory']
+            asset_title = valuables['asset_title']
+            parent_uuid = valuables['parent_uuid']
+            asset_tag = valuables['asset_tag']
+            export_dir = valuables['export_directory']
+            #set description, fallback to title if missing from dictionary
+            if valuables['asset_description']:
+                if valuables['asset_description'] != None and valuables['asset_description'] != "":
+                    asset_description = valuables['asset_description']
                 else:
-                    filename2 = os.path.join(access1_representation, filename.split(".")[0], filename)
-                if not os.path.exists(os.path.dirname(filename2)):
-                    os.makedirs(os.path.dirname(filename2), exist_ok=True)
-                shutil.copyfile(filename1,filename2)
-                toDelete.append(filename2)
-                checksum2 = create_sha256(filename2)
-                if checksum1 == checksum2:
-                    print("copy of",filename,"verified, continuing")
-                else:
-                    print("error in copying of",filename,"... exiting, try again")
-                    sys.exit()
-    for dirpath, dirnames, filenames in os.walk(access2_directory):
-        for filename in filenames:
-            if not filename.endswith(tuple(valuables['ignore'])):
-                filename1 = os.path.join(dirpath, filename)
-                checksum1 = create_sha256(filename1)
-                if filename.split(".")[-1] == "srt":
-                    filename2 = os.path.join(access2_representation, "English", filename)
-                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
-                    filename2 = os.path.join(access2_representation, "English", filename)
-                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
-                    filename2 = os.path.join(access2_representation, "Spanish", filename)
-                elif filename.endswith(tuple(["mp4","m4v","mov"])):
-                    filename2 = os.path.join(access2_representation, "Movie", filename)
-                else:
-                    filename2 = os.path.join(access2_representation, filename.split(".")[0], filename)
-                if not os.path.exists(os.path.dirname(filename2)):
-                    os.makedirs(os.path.dirname(filename2), exist_ok=True)
-                shutil.copyfile(filename1,filename2)
-                toDelete.append(filename2)
-                checksum2 = create_sha256(filename2)
-                if checksum1 == checksum2:
-                    print("copy of",filename,"verified, continuing")
-                else:
-                    print("error in copying of",filename,"... exiting, try again")
-                    sys.exit()
-    for dirpath, dirnames, filenames in os.walk(preservation_directory):
-        for filename in filenames:
-            if not filename.endswith(tuple(valuables['ignore'])):
-                filename1 = os.path.join(dirpath, filename)
-                checksum1 = create_sha256(filename1)
-                if filename.split(".")[-1] == "srt":
-                    filename2 = os.path.join(preservation_representation, "English", filename)
-                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
-                    filename2 = os.path.join(preservation_representation, "English", filename)
-                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
-                    filename2 = os.path.join(preservation_representation, "Spanish", filename)
-                elif filename.endswith(tuple(["mp4","m4v","mov"])):
-                    filename2 = os.path.join(preservation_representation, "Movie", filename)
-                else:
-                    filename2 = os.path.join(preservation_representation, filename.split(".")[0], filename)
-                if not os.path.exists(os.path.dirname(filename2)):
-                    os.makedirs(os.path.dirname(filename2), exist_ok=True)
-                shutil.copyfile(filename1, filename2)
-                toDelete.append(filename2)
-                checksum2 = create_sha256(filename2)
-                if checksum1 == checksum2:
-                    print("copy of",filename,"verified, continuing")
-                else:
-                    print("error in copying of",filename,"... exiting, try again")
-                    sys.exit()
-    # start creating the representations, content objects and bitstreams
-    access1_refs_dict = {}
-    if access1_representation:
-        access1_refs_dict = make_representation(xip, "Access1", "Access", access1_directory, asset_id, valuables)
-    access2_refs_dict = {}
-    if access2_representation:
-        access2_refs_dict = make_representation(xip, "Access2", "Access", access2_directory, asset_id, valuables)
-    preservation_refs_dict = {}
-    if preservation_representation:
-        preservation_refs_dict = make_representation(xip, "Preservation", "Preservation", preservation_directory, asset_id, valuables)
-    if access1_refs_dict:
-        make_content_objects(xip, access1_refs_dict, asset_id, asset_tag, "", "")
-    if access2_refs_dict:
-        make_content_objects(xip, access2_refs_dict, asset_id, asset_tag, "", "")
-    if preservation_refs_dict:
-        make_content_objects(xip, preservation_refs_dict, asset_id, asset_tag, "", "")
-    if access1_refs_dict:
-        make_generation(xip, access1_refs_dict, "Access_1")
-    if access2_refs_dict:
-        make_generation(xip, access2_refs_dict, "Access_2")
-    if preservation_refs_dict:
-        make_generation(xip, preservation_refs_dict, "Preservation")
-    if access1_refs_dict:
-        make_bitstream(xip, access1_refs_dict, access1_directory, "Access_1", access1_representation)
-    if access2_refs_dict:
-        make_bitstream(xip, access2_refs_dict, access2_directory, "Access_2", access2_representation)
-    if preservation_representation:
-        make_bitstream(xip, preservation_refs_dict, preservation_directory, "Preservation1", preservation_representation)
-    pax_folder = export_dir + "/" + asset_title
-    # currently unable to get xip to work with preservica ingest, uncomment the 4 lines below if/when it starts working
-    pax_file = pax_folder + "/" + asset_title + ".xip"
-    metadata = open(pax_file, "wt", encoding='utf-8')
-    metadata.write(prettify(xip))
-    metadata.close()
-    tempy = export_dir + "/temp"
-    os.makedirs(tempy, exist_ok=True)
-    archive_name = export_dir + "/" + asset_title + ".pax"
-    current = time.asctime()
-    print(f'making preliminary pax file as of {current}')
-    shutil.make_archive(archive_name, "zip", pax_folder)
-    archive_name = archive_name + ".zip"
-    archive_name2 = archive_name.replace(export_dir, tempy)
-    shutil.move(archive_name,archive_name2)
-    make_opex(valuables, archive_name2)
-    compiled_opex = export_dir + "/" + asset_id
-    current = time.asctime()
-    print(f'making opex file as of {current}')
-    shutil.make_archive(compiled_opex, "zip", tempy)
-    compiled_opex = compiled_opex + ".zip"
-    valuables['compiled_opex'] = compiled_opex
-    print("uploading",asset_title)
-    uploader(valuables)
-    toDelete.append(compiled_opex)
-    toDelete.append(archive_name2)
-    toDelete.append(archive_name2 + ".opex")
-    #cleanup
-    for item in toDelete:
-        os.remove(item)
-    try:
-        os.rmdir(export_dir + "/" + asset_title)
-        os.rmdir(tempy)
-    except:
-        print("\n","unable to remove staging folder for",asset_title)
+                    asset_description = valuables['asset_title']
+            else:
+                asset_description = valuables['asset_title']
+            # initiate creating xml file
+            xip = Element('XIP')
+            xip.set('xmlns', 'http://preservica.com/XIP/v6.4')
+            io = SubElement(xip, 'InformationObject')
+            ref = SubElement(io, 'Ref')
+            ref.text = str(uuid.uuid4())
+            valuables['asset_id'] = ref.text
+            asset_id = valuables['asset_id']
+            title = SubElement(io, 'Title')
+            title.text = asset_title
+            description = SubElement(io, 'Description')
+            description.text = asset_description
+            security = SubElement(io, 'SecurityTag')
+            security.text = asset_tag
+            custom_type = SubElement(io, 'CustomType')
+            custom_type.text = ""
+            parent = SubElement(io, 'Parent')
+            parent.text = parent_uuid
+            # copy the files to the export area for processing
+            access1_representation = os.path.join(export_dir, asset_title, "Representation_Access_1")
+            access2_representation = os.path.join(export_dir, asset_title, "Representation_Access_2")
+            preservation_representation = os.path.join(export_dir, asset_title, "Representation_Preservation")
+            for dirpath, dirnames, filenames in os.walk(access1_directory):
+                for filename in filenames:
+                    if not filename.endswith(tuple(valuables['ignore'])):
+                        filename1 = os.path.join(dirpath, filename)
+                        checksum1 = create_sha256(filename1)
+                        if filename.split(".")[-1] == "srt":
+                            filename2 = os.path.join(access1_representation, "English", filename)
+                        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
+                            filename2 = os.path.join(access1_representation, "English", filename)
+                        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+                            filename2 = os.path.join(access1_representation, "Spanish", filename)
+                        elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                            filename2 = os.path.join(access1_representation, "Movie", filename)
+                        else:
+                            filename2 = os.path.join(access1_representation, filename.split(".")[0], filename)
+                        if not os.path.exists(os.path.dirname(filename2)):
+                            os.makedirs(os.path.dirname(filename2), exist_ok=True)
+                        shutil.copyfile(filename1,filename2)
+                        toDelete.append(filename2)
+                        checksum2 = create_sha256(filename2)
+                        if checksum1 == checksum2:
+                            print("copy of",filename,"verified, continuing")
+                        else:
+                            print("error in copying of",filename,"... exiting, try again")
+                            sys.exit()
+            for dirpath, dirnames, filenames in os.walk(access2_directory):
+                for filename in filenames:
+                    if not filename.endswith(tuple(valuables['ignore'])):
+                        filename1 = os.path.join(dirpath, filename)
+                        checksum1 = create_sha256(filename1)
+                        if filename.split(".")[-1] == "srt":
+                            filename2 = os.path.join(access2_representation, "English", filename)
+                        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
+                            filename2 = os.path.join(access2_representation, "English", filename)
+                        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+                            filename2 = os.path.join(access2_representation, "Spanish", filename)
+                        elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                            filename2 = os.path.join(access2_representation, "Movie", filename)
+                        else:
+                            filename2 = os.path.join(access2_representation, filename.split(".")[0], filename)
+                        if not os.path.exists(os.path.dirname(filename2)):
+                            os.makedirs(os.path.dirname(filename2), exist_ok=True)
+                        shutil.copyfile(filename1,filename2)
+                        toDelete.append(filename2)
+                        checksum2 = create_sha256(filename2)
+                        if checksum1 == checksum2:
+                            print("copy of",filename,"verified, continuing")
+                        else:
+                            print("error in copying of",filename,"... exiting, try again")
+                            sys.exit()
+            for dirpath, dirnames, filenames in os.walk(preservation_directory):
+                for filename in filenames:
+                    if not filename.endswith(tuple(valuables['ignore'])):
+                        filename1 = os.path.join(dirpath, filename)
+                        checksum1 = create_sha256(filename1)
+                        if filename.split(".")[-1] == "srt":
+                            filename2 = os.path.join(preservation_representation, "English", filename)
+                        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
+                            filename2 = os.path.join(preservation_representation, "English", filename)
+                        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+                            filename2 = os.path.join(preservation_representation, "Spanish", filename)
+                        elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                            filename2 = os.path.join(preservation_representation, "Movie", filename)
+                        else:
+                            filename2 = os.path.join(preservation_representation, filename.split(".")[0], filename)
+                        if not os.path.exists(os.path.dirname(filename2)):
+                            os.makedirs(os.path.dirname(filename2), exist_ok=True)
+                        shutil.copyfile(filename1, filename2)
+                        toDelete.append(filename2)
+                        checksum2 = create_sha256(filename2)
+                        if checksum1 == checksum2:
+                            print("copy of",filename,"verified, continuing")
+                        else:
+                            print("error in copying of",filename,"... exiting, try again")
+                            sys.exit()
+            # start creating the representations, content objects and bitstreams
+            access1_refs_dict = {}
+            if access1_representation:
+                access1_refs_dict = make_representation(xip, "Access1", "Access", access1_directory, asset_id, valuables)
+            access2_refs_dict = {}
+            if access2_representation:
+                access2_refs_dict = make_representation(xip, "Access2", "Access", access2_directory, asset_id, valuables)
+            preservation_refs_dict = {}
+            if preservation_representation:
+                preservation_refs_dict = make_representation(xip, "Preservation", "Preservation", preservation_directory, asset_id, valuables)
+            if access1_refs_dict:
+                make_content_objects(xip, access1_refs_dict, asset_id, asset_tag, "", "")
+            if access2_refs_dict:
+                make_content_objects(xip, access2_refs_dict, asset_id, asset_tag, "", "")
+            if preservation_refs_dict:
+                make_content_objects(xip, preservation_refs_dict, asset_id, asset_tag, "", "")
+            if access1_refs_dict:
+                make_generation(xip, access1_refs_dict, "Access_1")
+            if access2_refs_dict:
+                make_generation(xip, access2_refs_dict, "Access_2")
+            if preservation_refs_dict:
+                make_generation(xip, preservation_refs_dict, "Preservation")
+            if access1_refs_dict:
+                make_bitstream(xip, access1_refs_dict, access1_directory, "Access_1", access1_representation)
+            if access2_refs_dict:
+                make_bitstream(xip, access2_refs_dict, access2_directory, "Access_2", access2_representation)
+            if preservation_representation:
+                make_bitstream(xip, preservation_refs_dict, preservation_directory, "Preservation1", preservation_representation)
+            pax_folder = export_dir + "/" + asset_title
+            # currently unable to get xip to work with preservica ingest, uncomment the 4 lines below if/when it starts working
+            pax_file = pax_folder + "/" + asset_title + ".xip"
+            metadata = open(pax_file, "wt", encoding='utf-8')
+            metadata.write(prettify(xip))
+            metadata.close()
+            tempy = export_dir + "/temp"
+            os.makedirs(tempy, exist_ok=True)
+            archive_name = export_dir + "/" + asset_title + ".pax"
+            current = time.asctime()
+            print(f'making preliminary pax file as of {current}')
+            shutil.make_archive(archive_name, "zip", pax_folder)
+            archive_name = archive_name + ".zip"
+            archive_name2 = archive_name.replace(export_dir, tempy)
+            shutil.move(archive_name,archive_name2)
+            make_opex(valuables, archive_name2)
+            compiled_opex = export_dir + "/" + asset_id
+            current = time.asctime()
+            print(f'making opex file as of {current}')
+            shutil.make_archive(compiled_opex, "zip", tempy)
+            compiled_opex = compiled_opex + ".zip"
+            valuables['compiled_opex'] = compiled_opex
+            print("uploading",asset_title)
+            uploader(valuables)
+            toDelete.append(compiled_opex)
+            toDelete.append(archive_name2)
+            toDelete.append(archive_name2 + ".opex")
+            #cleanup
+            for item in toDelete:
+                os.remove(item)
+            try:
+                os.rmdir(export_dir + "/" + asset_title)
+                os.rmdir(tempy)
+            except:
+                print("\n","unable to remove staging folder for",asset_title)
+            finito = 1
+        except KeyboardInterrupt:
+            print("process paused, cleaning up current round")
+            time.sleep(10)
+            for dirpath, dirnames, filenames in os.walk(export_dir):
+                for filename in filenames:
+                    filename = os.path.join(dirpath, filename)
+                    os.remove(filename)
+            resume = input("type 'resume' to resume process: ")
+            if resume == "resume":
+                continue
+            else:
+                print("you chose to exit")
+                sys.exit()
 
 def multi_upload(valuables):
     # a trimmed down version of the version with XIP, because we honestly don't need the fluff
-    toDelete = []
-    current = time.asctime()
-    print(f'starting multi-part upload at {current}')
-    # unpack the dictionary to individual variables
-    access1_directory = valuables['access1_directory']
-    access2_directory = valuables['access2_directory']
-    preservation_directory = valuables['preservation_directory']
-    asset_title = valuables['asset_title']
-    export_dir = valuables['export_directory']
-    valuables['asset_id'] = str(uuid.uuid4())
-    asset_id = valuables['asset_id']
-    # copy the files to the export area for processing
-    access1_representation = os.path.join(export_dir, asset_title, "Representation_Access_1")
-    access2_representation = os.path.join(export_dir, asset_title, "Representation_Access_2")
-    preservation_representation = os.path.join(export_dir, asset_title, "Representation_Preservation")
-    for dirpath, dirnames, filenames in os.walk(access1_directory):
-        for filename in filenames:
-            if not filename.endswith(tuple(valuables['ignore'])):
-                filename1 = os.path.join(dirpath, filename)
-                checksum1 = create_sha256(filename1)
-                if filename.split(".")[-1] == "srt":
-                    filename2 = os.path.join(access1_representation, "English", filename)
-                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
-                    filename2 = os.path.join(access1_representation, "English", filename)
-                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
-                    filename2 = os.path.join(access1_representation, "Spanish", filename)
-                elif filename.endswith(tuple(["mp4","m4v","mov"])):
-                    filename2 = os.path.join(access1_representation, "Movie", filename)
-                else:
-                    filename2 = os.path.join(access1_representation, filename.split(".")[0], filename)
-                if not os.path.exists(os.path.dirname(filename2)):
-                    os.makedirs(os.path.dirname(filename2), exist_ok=True)
-                shutil.copyfile(filename1,filename2)
-                toDelete.append(filename2)
-                checksum2 = create_sha256(filename2)
-                if checksum1 == checksum2:
-                    print("copy of",filename,"verified, continuing")
-                else:
-                    print("error in copying of",filename,"... exiting, try again")
-                    sys.exit()
-    for dirpath, dirnames, filenames in os.walk(access2_directory):
-        for filename in filenames:
-            if not filename.endswith(tuple(valuables['ignore'])):
-                filename1 = os.path.join(dirpath, filename)
-                checksum1 = create_sha256(filename1)
-                if filename.split(".")[-1] == "srt":
-                    filename2 = os.path.join(access2_representation, "English", filename)
-                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
-                    filename2 = os.path.join(access2_representation, "English", filename)
-                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
-                    filename2 = os.path.join(access2_representation, "Spanish", filename)
-                elif filename.endswith(tuple(["mp4","m4v","mov"])):
-                    filename2 = os.path.join(access2_representation, "Movie", filename)
-                else:
-                    filename2 = os.path.join(access2_representation, filename.split(".")[0], filename)
-                if not os.path.exists(os.path.dirname(filename2)):
-                    os.makedirs(os.path.dirname(filename2), exist_ok=True)
-                shutil.copyfile(filename1,filename2)
-                toDelete.append(filename2)
-                checksum2 = create_sha256(filename2)
-                if checksum1 == checksum2:
-                    print("copy of",filename,"verified, continuing")
-                else:
-                    print("error in copying of",filename,"... exiting, try again")
-                    sys.exit()
-    for dirpath, dirnames, filenames in os.walk(preservation_directory):
-        for filename in filenames:
-            if not filename.endswith(tuple(valuables['ignore'])):
-                filename1 = os.path.join(dirpath, filename)
-                checksum1 = create_sha256(filename1)
-                if filename.split(".")[-1] == "srt":
-                    filename2 = os.path.join(preservation_representation, "English", filename)
-                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
-                    filename2 = os.path.join(preservation_representation, "English", filename)
-                elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
-                    filename2 = os.path.join(preservation_representation, "Spanish", filename)
-                elif filename.endswith(tuple(["mp4","m4v","mov"])):
-                    filename2 = os.path.join(preservation_representation, "Movie", filename)
-                else:
-                    filename2 = os.path.join(preservation_representation, filename.split(".")[0], filename)
-                if not os.path.exists(os.path.dirname(filename2)):
-                    os.makedirs(os.path.dirname(filename2), exist_ok=True)
-                shutil.copyfile(filename1, filename2)
-                toDelete.append(filename2)
-                checksum2 = create_sha256(filename2)
-                if checksum1 == checksum2:
-                    print("copy of",filename,"verified, continuing")
-                else:
-                    print("error in copying of",filename,"... exiting, try again")
-                    sys.exit()
-    pax_folder = export_dir + "/" + asset_title
-    tempy = export_dir + "/temp"
-    os.makedirs(tempy, exist_ok=True)
-    archive_name = export_dir + "/" + asset_title + ".pax"
-    current = time.asctime()
-    print(f'making preliminary pax file as of {current}')
-    shutil.make_archive(archive_name, "zip", pax_folder)
-    archive_name = archive_name + ".zip"
-    archive_name2 = archive_name.replace(export_dir, tempy)
-    shutil.move(archive_name,archive_name2)
-    make_opex(valuables, archive_name2)
-    compiled_opex = export_dir + "/" + asset_id
-    current = time.asctime()
-    print(f'making opex file as of {current}')
-    shutil.make_archive(compiled_opex, "zip", tempy)
-    compiled_opex = compiled_opex + ".zip"
-    valuables['compiled_opex'] = compiled_opex
-    print("uploading",asset_title)
-    uploader(valuables)
-    toDelete.append(compiled_opex)
-    toDelete.append(archive_name2)
-    toDelete.append(archive_name2 + ".opex")
-    #cleanup
-    for item in toDelete:
-        os.remove(item)
-    try:
-        os.rmdir(export_dir + "/" + asset_title)
-        os.rmdir(tempy)
-    except:
-        print("\n","unable to remove staging folder for",asset_title)
+    print("to pause process press ctrl+c. If pausing during zip creation process may abort")
+    finito = 0
+    while finito == 0:
+        try:
+            toDelete = []
+            current = time.asctime()
+            print(f'starting multi-part upload at {current}')
+            # unpack the dictionary to individual variables
+            access1_directory = valuables['access1_directory']
+            access2_directory = valuables['access2_directory']
+            preservation_directory = valuables['preservation_directory']
+            asset_title = valuables['asset_title']
+            export_dir = valuables['export_directory']
+            valuables['asset_id'] = str(uuid.uuid4())
+            asset_id = valuables['asset_id']
+            # copy the files to the export area for processing
+            access1_representation = os.path.join(export_dir, asset_title, "Representation_Access_1")
+            access2_representation = os.path.join(export_dir, asset_title, "Representation_Access_2")
+            preservation_representation = os.path.join(export_dir, asset_title, "Representation_Preservation")
+            for dirpath, dirnames, filenames in os.walk(access1_directory):
+                for filename in filenames:
+                    if not filename.endswith(tuple(valuables['ignore'])):
+                        filename1 = os.path.join(dirpath, filename)
+                        checksum1 = create_sha256(filename1)
+                        if filename.split(".")[-1] == "srt":
+                            filename2 = os.path.join(access1_representation, "English", filename)
+                        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
+                            filename2 = os.path.join(access1_representation, "English", filename)
+                        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+                            filename2 = os.path.join(access1_representation, "Spanish", filename)
+                        elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                            filename2 = os.path.join(access1_representation, "Movie", filename)
+                        else:
+                            filename2 = os.path.join(access1_representation, filename.split(".")[0], filename)
+                        if not os.path.exists(os.path.dirname(filename2)):
+                            os.makedirs(os.path.dirname(filename2), exist_ok=True)
+                        shutil.copyfile(filename1,filename2)
+                        toDelete.append(filename2)
+                        checksum2 = create_sha256(filename2)
+                        if checksum1 == checksum2:
+                            print("copy of",filename,"verified, continuing")
+                        else:
+                            print("error in copying of",filename,"... exiting, try again")
+                            sys.exit()
+            for dirpath, dirnames, filenames in os.walk(access2_directory):
+                for filename in filenames:
+                    if not filename.endswith(tuple(valuables['ignore'])):
+                        filename1 = os.path.join(dirpath, filename)
+                        checksum1 = create_sha256(filename1)
+                        if filename.split(".")[-1] == "srt":
+                            filename2 = os.path.join(access2_representation, "English", filename)
+                        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
+                            filename2 = os.path.join(access2_representation, "English", filename)
+                        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+                            filename2 = os.path.join(access2_representation, "Spanish", filename)
+                        elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                            filename2 = os.path.join(access2_representation, "Movie", filename)
+                        else:
+                            filename2 = os.path.join(access2_representation, filename.split(".")[0], filename)
+                        if not os.path.exists(os.path.dirname(filename2)):
+                            os.makedirs(os.path.dirname(filename2), exist_ok=True)
+                        shutil.copyfile(filename1,filename2)
+                        toDelete.append(filename2)
+                        checksum2 = create_sha256(filename2)
+                        if checksum1 == checksum2:
+                            print("copy of",filename,"verified, continuing")
+                        else:
+                            print("error in copying of",filename,"... exiting, try again")
+                            sys.exit()
+            for dirpath, dirnames, filenames in os.walk(preservation_directory):
+                for filename in filenames:
+                    if not filename.endswith(tuple(valuables['ignore'])):
+                        filename1 = os.path.join(dirpath, filename)
+                        checksum1 = create_sha256(filename1)
+                        if filename.split(".")[-1] == "srt":
+                            filename2 = os.path.join(preservation_representation, "English", filename)
+                        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
+                            filename2 = os.path.join(preservation_representation, "English", filename)
+                        elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+                            filename2 = os.path.join(preservation_representation, "Spanish", filename)
+                        elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                            filename2 = os.path.join(preservation_representation, "Movie", filename)
+                        else:
+                            filename2 = os.path.join(preservation_representation, filename.split(".")[0], filename)
+                        if not os.path.exists(os.path.dirname(filename2)):
+                            os.makedirs(os.path.dirname(filename2), exist_ok=True)
+                        shutil.copyfile(filename1, filename2)
+                        toDelete.append(filename2)
+                        checksum2 = create_sha256(filename2)
+                        if checksum1 == checksum2:
+                            print("copy of",filename,"verified, continuing")
+                        else:
+                            print("error in copying of",filename,"... exiting, try again")
+                            sys.exit()
+            pax_folder = export_dir + "/" + asset_title
+            tempy = export_dir + "/temp"
+            os.makedirs(tempy, exist_ok=True)
+            archive_name = export_dir + "/" + asset_title + ".pax"
+            current = time.asctime()
+            print(f'making preliminary pax file as of {current}')
+            shutil.make_archive(archive_name, "zip", pax_folder)
+            archive_name = archive_name + ".zip"
+            archive_name2 = archive_name.replace(export_dir, tempy)
+            shutil.move(archive_name,archive_name2)
+            make_opex(valuables, archive_name2)
+            compiled_opex = export_dir + "/" + asset_id
+            current = time.asctime()
+            print(f'making opex file as of {current}')
+            shutil.make_archive(compiled_opex, "zip", tempy)
+            compiled_opex = compiled_opex + ".zip"
+            valuables['compiled_opex'] = compiled_opex
+            print("uploading",asset_title)
+            uploader(valuables)
+            toDelete.append(compiled_opex)
+            toDelete.append(archive_name2)
+            toDelete.append(archive_name2 + ".opex")
+            #cleanup
+            for item in toDelete:
+                os.remove(item)
+            try:
+                os.rmdir(export_dir + "/" + asset_title)
+                os.rmdir(tempy)
+            except:
+                print("\n","unable to remove staging folder for",asset_title)
+            finito = 1
+        except KeyboardInterrupt:
+            print("process paused, cleaning up current round")
+            time.sleep(10)
+            for dirpath, dirnames, filenames in os.walk(export_dir):
+                for filename in filenames:
+                    filename = os.path.join(dirpath, filename)
+                    os.remove(filename)
+            '''for item in toDelete:
+                os.remove(item)'''
+            resume = input("type 'resume' to resume processes:")
+            if resume == "resume":
+                continue
+            else:
+                print("you chose to exit")
+                sys.exit()
 
 def make_opex(valuables, filename2):
     opex = Element('opex:OPEXMetadata', {'xmlns:opex': 'http://www.openpreservationexchange.org/opex/v1.0'})
