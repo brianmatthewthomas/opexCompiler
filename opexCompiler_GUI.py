@@ -23,7 +23,8 @@ layout = [
     [
         sg.Radio("2-version crawler","radio1", default=False,key="-TYPE_2v-"),
         sg.Radio("3-version crawler","radio1", default=False,key="-TYPE_3v-"),
-        sg.Radio("3-version crawler tree","radio1", default=False,key="-TYPE_3v-tree-")
+        sg.Radio("3-version crawler tree","radio1", default=False,key="-TYPE_3v-tree-"),
+        sg.Button("Push to Update")
     ],
     [
       sg.Checkbox("Use config file?", checkbox_color="dark green",key="-CONFIG-",tooltip="to pre-populate the necessary fields", enable_events=True)
@@ -246,7 +247,41 @@ while True:
                   'MetadataResponse': f'http://preservica.com/EntityAPI/v{version}',
                   'dcterms': 'http://dublincore.org/documents/dcmi-terms',
                   'tslac': 'https://www.tsl.texas.gov/'}
-    object_type = values['--']
+    object_type = values['-TYPE-']
+    delay = values['-DELAY-']
+    if values['-DELAY-'] != "":
+        delay = int(delay)
+    standardDir = values['-UUID-']
+    quiet_time = values['-QuietTime-']
+    if quiet_time is True:
+        quiet_start = values['-QUIET_Start-']
+        quiet_start = quiet_start.split(":")
+        quiet_start = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
+        quiet_end = values['-QUIET_End-']
+        quiet_end = quiet_end.split(":")
+        quiet_end = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
+        interval = int(values['-INTERVAL-'])
+    staging = values['-UploadStaging-']
+    base_url = f"https://{prefix}.preservica.com/api/entity/structural-objects/"
+    baseline_valuables = {'username':username,
+                          'password':password,
+                          'tenent':tenancy,
+                          'prefix':prefix,
+                          'asset_title':'',
+                          'asset_tag':'open',
+                          'parent_uuid':standardDir,
+                          'export_directory':staging,
+                          'asset_description':'',
+                          'ignore':['.metadata','.db'],
+                          'special_format':object_type,
+                          'quiet_time':False}
+    secondaryDir = ""
+    secondaryTitle = ""
+    log = open("log_multipathAssets.txt","a")
+    helperFile = "helperFile.txt"
+    counter1 = 0
+    counter2 = 0
+    setup = ""
     if event == "Load":
         if use_config is True and configfile != "":
             config = configparser.ConfigParser()
@@ -286,6 +321,8 @@ while True:
             window['-QUIET_End-'].update(var)
             var = config.get('general','interval')
             window['-INTERVAL-'].update(var)
+            var = config.get('general','export_location')
+            window['-UploadStaging-'].update(var)
             print("config file loaded")
             window['-OUTPUT-'].update("\nConfiguration loaded", append=True)
     if event == "Execute":
@@ -293,17 +330,263 @@ while True:
             window['-OUTPUT-'].update("\nprocessing a 2 version opex directory", append=True)
             dirpath1 = values['-preservation_folder-']
             dirpath2 = values['-presentation_folder-']
+            dirLength = len(dirpath1) + 1
+            for dirpath, dirnames, filenames in os.walk(dirpath1):
+                for filename in filenames:
+                    valuables = baseline_valuables
+                    valuables['quiet_time'] = quiet_time
+                    if not filename.endswith((".metadata")):
+                        if dirpath != setup:
+                            if quiet_time is True:
+                                valuables['quiet_start'] = quiet_start
+                                valuables['quiet_end'] = quiet_end
+                                valuables['interval'] = interval
+                            setup = dirpath
+                            valuables['asset_title'] = dirpath.split("/")[-1]
+                            print(valuables['asset_title'])
+                            valuables['asset_description'] = valuables['asset_title']
+                            fileLength = len(filename)
+                            filename = os.path.join(dirpath, filename)
+                            metadata_file = os.path.join(dirpath, valuables['asset_title'] + ".metadata")
+                            if os.path.isfile(metadata_file):
+                                valuables['metadata_file'] = metadata_file
+                            # musical chairs with directory paths so we don't mess up the original variable values
+                            dirpath3 = dirpath
+                            dirpath5 = dirpath.replace(dirpath1, dirpath2)
+                            dirpath4 = dirpath1 + "/" + valuables['asset_title']
+                            math = len(valuables['asset_title']) + 1
+                            valuables['access_directory'] = dirpath3
+                            valuables['preservation_directory'] = dirpath5
+                            if dirpath4 != dirpath3:
+                                print("not a root asset, sending to subfolder")
+                                dirTitle = dirpath3.split("/")[-2]
+                                print("drectory title:", dirTitle)
+                                if dirTitle == secondaryTitle:
+                                    valuables['parent_uuid'] = secondaryDir
+                                    opexCreator.multi_upload_withXIP(valuables)
+                                if dirTitle != secondaryTitle:
+                                    print("directory doesn't exist yet, creating it")
+                                    headers = login(url, payload)
+                                    data = f'<StructuralObject xmlns="http://preservica.com/XIP/v{version}"><Title>' + dirTitle + '</Title><Description>' + dirTitle + '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + '</Parent></StructuralObject>'
+                                    response = requests.post(base_url, headers=headers, data=data)
+                                    status = response.status_code
+                                    print(status)
+                                    with open(helperFile, 'wb') as fd:
+                                        for chunk in response.iter_content(chunk_size=128):
+                                            fd.write(chunk)
+                                    fd.close()
+                                    dom = ET.parse(helperFile)
+                                    purl = dom.find(".//xip:Ref", namespaces=namespaces).text
+                                    secondaryDir = purl
+                                    valuables['parent_uuid'] = purl
+                                    posty = dom.find(".//EntityResponse:Self", namespaces=namespaces).text
+                                    posty = posty + "/metadata"
+                                    dirMD = dirpath[:-math] + "/" + dirTitle + ".metadata"
+                                    if os.path.isfile(dirMD):
+                                        response = requests.post(posty, headers=headers, data=open(dirMD, 'rb'))
+                                        print("adding metadata to the directory")
+                                    else:
+                                        print("no metadata file for the directory")
+                                    secondaryTitle = dirTitle
+                                    opexCreator.multi_upload_withXIP(valuables)
+                            else:
+                                opexCreator.multi_upload_withXIP(valuables)
+                            counter1 += 1
+                            print(counter1,"units uploaded thus far")
+                            if delay > 0:
+                                opexCreator.opexCreator.countdown(delay)
+                            log.write(valuables['asset_title'] + " upload complete" + "\n")
+                        else:
+                            continue
+            if os.path.isfile("./transfer_agent_list.txt"):
+                try:
+                    os.remove("./transfer_agent_list.txt")
+                except:
+                    print("unable to remove ./transfer_agent_list.txt, please delete manually")
+            log.close()
+            print("all done")
+            print(counter1, "successes")
         if opex_type == "3versions_crawler":
             window['-OUTPUT-'].update("\nprocessing a 3 version opex directory setup", append=True)
             dirpath1 = values['-preservation_folder-']
             dirpath2 = values['-presentation_folder-']
             dirpathA = values['-intermediary_folder-']
+            dirLength = len(dirpath1) + 1
+            for dirpath, dirnames, filenames in os.walk(dirpath1):
+                for filename in filenames:
+                    valuables = baseline_valuables
+                    valuables['quiet_time'] = quiet_time
+                    if not filename.endswith((".metadata")):
+                        if dirpath != setup:
+                            if quiet_time is True:
+                                valuables['quiet_start'] = quiet_start
+                                valuables['quiet_end'] = quiet_end
+                                valuables['interval'] = interval
+                            setup = dirpath
+                            valuables['asset_title'] = dirpath.split("/")[-1]
+                            print(valuables['asset_title'])
+                            valuables['asset_description'] = valuables['asset_title']
+                            fileLength = len(filename)
+                            filename = os.path.join(dirpath, filename)
+                            metadata_file = os.path.join(dirpath, valuables['asset_title'] + ".metadata")
+                            if os.path.isfile(metadata_file):
+                                valuables['metadata_file'] = metadata_file
+                            # musical chairs with directory paths so we don't mess up the original variable values
+                            dirpath3 = dirpath
+                            dirpath5 = dirpath.replace(dirpath1, dirpath2)
+                            dirpathB = dirpath.replace(dirpath1, dirpathA)
+                            dirpath4 = dirpath1 + "/" + valuables['asset_title']
+                            math = len(valuables['asset_title']) + 1
+                            valuables['access2_directory'] = dirpath3
+                            valuables['access1_directory'] = dirpathB
+                            valuables['preservation_directory'] = dirpath5
+                            if dirpath4 != dirpath3:
+                                print("not a root asset, sending to subfolder")
+                                dirTitle = dirpath3.split("/")[-2]
+                                print("drectory title:", dirTitle)
+                                if dirTitle == secondaryTitle:
+                                    valuables['parent_uuid'] = secondaryDir
+                                    opexCreator_3versions.multi_upload_withXIP(valuables)
+                                if dirTitle != secondaryTitle:
+                                    print("directory doesn't exist yet, creating it")
+                                    headers = login(url, payload)
+                                    data = f'<StructuralObject xmlns="http://preservica.com/XIP/v{version}"><Title>' + dirTitle + '</Title><Description>' + dirTitle + '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + '</Parent></StructuralObject>'
+                                    response = requests.post(base_url, headers=headers, data=data)
+                                    status = response.status_code
+                                    print(status)
+                                    with open(helperFile, 'wb') as fd:
+                                        for chunk in response.iter_content(chunk_size=128):
+                                            fd.write(chunk)
+                                    fd.close()
+                                    dom = ET.parse(helperFile)
+                                    purl = dom.find(".//xip:Ref", namespaces=namespaces).text
+                                    secondaryDir = purl
+                                    valuables['parent_uuid'] = purl
+                                    posty = dom.find(".//EntityResponse:Self", namespaces=namespaces).text
+                                    posty = posty + "/metadata"
+                                    dirMD = dirpath[:-math] + "/" + dirTitle + ".metadata"
+                                    if os.path.isfile(dirMD):
+                                        response = requests.post(posty, headers=headers, data=open(dirMD, 'rb'))
+                                        print("adding metadata to the directory")
+                                    else:
+                                        print("no metadata file for the directory")
+                                    secondaryTitle = dirTitle
+                                    opexCreator_3versions.multi_upload_withXIP(valuables)
+                            else:
+                                opexCreator_3versions.multi_upload_withXIP(valuables)
+                            counter1 += 1
+                            log.write(valuables['asset_title'] + " upload complete" + "\n")
+                        else:
+                            continue
+            if os.path.isfile("./transfer_agent_list.txt"):
+                try:
+                    os.remove("./transfer_agent_list.txt")
+                except:
+                    print("unable to remove ./transfer_agent_list.txt, please delete manually")
+            log.close()
+            print("all done")
+            print(counter1, "successes")
         if opex_type == "3versions_crawler_tree":
             window['-OUTPUT-'].update("\nprocessing a 3 version opex directory in a tree configuration", append=True)
             rooty = values['-ROOT-']
-            dirpath1 = values['-preservation1-']
-            dirpath2 = values['-presentation3-']
+            dirpath2 = values['-preservation1-']
+            dirpath1 = values['-presentation3-']
             dirpathA = values['-presentation2-']
+            dirLength = len(dirpath1) + 1
+            for dirpath, dirnames, filenames in os.walk(rooty):
+                for filename in filenames:
+                    if filename.endswith(".pdf"):
+                        counter2 += 1
+            for dirpath, dirnames, filenames in os.walk(rooty):
+                for filename in filenames:
+                    valuables = baseline_valuables
+                    valuables['quiet_time'] = quiet_time
+                    if dirpath1 in str(dirpath):
+                        if not filename.endswith((".metadata")):
+                            if dirpath != setup:
+                                if quiet_time is True:
+                                    valuables['quiet_start'] = quiet_start
+                                    valuables['quiet_end'] = quiet_end
+                                    valuables['interval'] = interval
+                                setup = dirpath
+                                valuables['asset_title'] = dirpath.split("/")[-2]
+                                print(valuables['asset_title'])
+                                valuables['asset_description'] = valuables['asset_title']
+                                fileLength = len(filename)
+                                filename = os.path.join(dirpath, filename)
+                                metadata_file = os.path.join(dirpath, valuables['asset_title'] + ".metadata")
+                                metadata_file2 = metadata_file.replace(dirpath1, dirpath2)
+                                metadata_file3 = metadata_file.replace(dirpath1, dirpathA)
+                                if os.path.isfile(metadata_file):
+                                    valuables['metadata_file'] = metadata_file
+                                elif os.path.isfile(metadata_file2):
+                                    valuables['metadata_file'] = metadata_file2
+                                elif os.path.isfile(metadata_file3):
+                                    valuables['metadata_file'] = metadata_file3
+                                # musical chairs with directory paths so we don't mess up the original variable values
+                                dirpath3 = dirpath
+                                dirpath5 = dirpath.replace(dirpath1, dirpath2)
+                                dirpathB = dirpath.replace(dirpath1, dirpathA)
+                                dirpath4 = valuables['asset_title'] + "/" + dirpath1
+                                math = len(valuables['asset_title']) + 1
+                                valuables['access2_directory'] = dirpath3
+                                valuables['access1_directory'] = dirpathB
+                                valuables['preservation_directory'] = dirpath5
+                                if dirpath4 != dirpath3:
+                                    print("not a root asset, sending to subfolder")
+                                    dirTitle = dirpath3.split("/")[-3]
+                                    print("drectory title:", dirTitle)
+                                    if dirTitle == secondaryTitle:
+                                        valuables['parent_uuid'] = secondaryDir
+                                        opexCreator_3versions.multi_upload_withXIP(valuables)
+                                    if dirTitle != secondaryTitle:
+                                        print("directory doesn't exist yet, creating it")
+                                        headers = login(url, payload)
+                                        data = f'<StructuralObject xmlns="http://preservica.com/XIP/v{version}"><Title>' + dirTitle + '</Title><Description>' + dirTitle + '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + '</Parent></StructuralObject>'
+                                        response = requests.post(base_url, headers=headers, data=data)
+                                        status = response.status_code
+                                        print(status)
+                                        with open(helperFile, 'wb') as fd:
+                                            for chunk in response.iter_content(chunk_size=128):
+                                                fd.write(chunk)
+                                        fd.close()
+                                        dom = ET.parse(helperFile)
+                                        purl = dom.find(".//xip:Ref", namespaces=namespaces).text
+                                        secondaryDir = purl
+                                        valuables['parent_uuid'] = purl
+                                        posty = dom.find(".//EntityResponse:Self", namespaces=namespaces).text
+                                        posty = posty + "/metadata"
+                                        dirMD = dirpath[:-math] + "/" + dirTitle + ".metadata"
+                                        if os.path.isfile(dirMD):
+                                            response = requests.post(posty, headers=headers, data=open(dirMD, 'rb'))
+                                            print("adding metadata to the directory")
+                                        else:
+                                            print("no metadata file for the directory")
+                                        secondaryTitle = dirTitle
+                                        opexCreator_3versions.multi_upload_withXIP(valuables)
+                                else:
+                                    opexCreator_3versions.multi_upload_withXIP(valuables)
+                                counter1 += 1
+                                print(counter1, "units uploaded thus far")
+                                window['-OUTPUT-'].update(f"\n{counter1} of {counter2} uploaded thus far", append=True)
+                                window['-Progress-'].update_bar(counter1, counter2)
+                                if delay > 0:
+                                    if use_config is True:
+                                        config.read(configfile)
+                                        delay = int(config.get('general', 'delay'))
+                                    opexCreator.opexCreator.countdown(delay)
+                                log.write(valuables['asset_title'] + " upload complete" + "\n")
+                            else:
+                                continue
+            if os.path.isfile("./transfer_agent_list.txt"):
+                try:
+                    os.remove("./transfer_agent_list.txt")
+                except:
+                    print("unable to remove ./transfer_agent_list.txt, please delete manually")
+            log.close()
+            print("all done")
+            print(counter1, "successes")
+            window['-OUTPUT-'].update("\nAll Done, okay to close the tool",append=True)
     if event == "Close" or event == sg.WIN_CLOSED:
         break
 window.close()
