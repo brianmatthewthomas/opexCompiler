@@ -408,8 +408,8 @@ while True:
             print(counter1, "successes")
         if opex_type == "3versions_crawler":
             window['-OUTPUT-'].update("\nprocessing a 3 version opex directory setup", append=True)
-            dirpath1 = values['-preservation_folder-']
-            dirpath2 = values['-presentation_folder-']
+            dirpath2 = values['-preservation_folder-']
+            dirpath1 = values['-presentation_folder-']
             dirpathA = values['-intermediary_folder-']
             dirLength = len(dirpath1) + 1
             for dirpath, dirnames, filenames in os.walk(dirpath1):
