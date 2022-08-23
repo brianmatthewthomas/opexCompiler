@@ -43,16 +43,15 @@ def prettify(elem):
     return reparse.toprettyxml(indent="    ")
 
 
-def new_token(username, password, tenent, prefix):
+def new_token(username, password, tenant, prefix):
     switch = 0
+    success = False
     while switch != 3:
-        paydirt = {'username': username, 'password': password, 'tenant': tenent}
+        paydirt = {'username': username, 'password': password, 'tenant': tenant}
         resp = requests.post(f'https://{prefix}.preservica.com/api/accesstoken/login', data=paydirt).json()
         print(resp)
-        if resp['success'] == True:
+        if resp['success'] is True:
             return resp['token']
-            switch = 3
-            success = True
         else:
             print(f"new_token failed with error code: {resp['status']}")
             print("retrying...")
@@ -65,23 +64,24 @@ def new_token(username, password, tenent, prefix):
         raise SystemExit
 
 
-# using a dictionary to pass data to the multipart upload script for simplicity of coding, can also include as individual variables
+# using a dictionary to pass data to the multipart upload script for simplicity of coding, can also include
+# as individual variables
 def multi_upload_withXIP(valuables):
     print("to pause process press ctrl+c. If pausing during zip creation process may abort")
     finito = 0
     while finito == 0:
+        export_dir = valuables['export_directory']
         try:
-            toDelete = []
+            to_delete = []
             # unpack the dictionary to individual variables
             access_directory = valuables['access_directory']
             preservation_directory = valuables['preservation_directory']
             asset_title = valuables['asset_title']
             parent_uuid = valuables['parent_uuid']
             asset_tag = valuables['asset_tag']
-            export_dir = valuables['export_directory']
-            #set description, fallback to title if missing from dictionary
+            # set description, fallback to title if missing from dictionary
             if valuables['asset_description']:
-                if valuables['asset_description'] != None and valuables['asset_description'] != "":
+                if valuables['asset_description'] is not None and valuables['asset_description'] != "":
                     asset_description = valuables['asset_description']
                 else:
                     asset_description = valuables['asset_title']
@@ -119,19 +119,19 @@ def multi_upload_withXIP(valuables):
                             filename2 = os.path.join(access_representation, "English", filename)
                         elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
                             filename2 = os.path.join(access_representation, "Spanish", filename)
-                        elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                        elif filename.endswith(tuple(["mp4", "m4v", "mov"])):
                             filename2 = os.path.join(access_representation, "Movie", filename)
                         else:
                             filename2 = os.path.join(access_representation, filename.split(".")[0], filename)
                         if not os.path.exists(os.path.dirname(filename2)):
                             os.makedirs(os.path.dirname(filename2), exist_ok=True)
-                        shutil.copyfile(filename1,filename2)
-                        toDelete.append(filename2)
+                        shutil.copyfile(filename1, filename2)
+                        to_delete.append(filename2)
                         checksum2 = create_sha256(filename2)
                         if checksum1 == checksum2:
-                            print("copy of",filename,"verified, continuing")
+                            print("copy of", filename, "verified, continuing")
                         else:
-                            print("error in copying of",filename,"... exiting, try again")
+                            print("error in copying of", filename, "... exiting, try again")
                             sys.exit()
             for dirpath, dirnames, filenames in os.walk(preservation_directory):
                 for filename in filenames:
@@ -144,19 +144,19 @@ def multi_upload_withXIP(valuables):
                             filename2 = os.path.join(preservation_representation, "English", filename)
                         elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
                             filename2 = os.path.join(preservation_representation, "Spanish", filename)
-                        elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                        elif filename.endswith(tuple(["mp4", "m4v", "mov"])):
                             filename2 = os.path.join(preservation_representation, "Movie", filename)
                         else:
                             filename2 = os.path.join(preservation_representation, filename.split(".")[0], filename)
                         if not os.path.exists(os.path.dirname(filename2)):
                             os.makedirs(os.path.dirname(filename2), exist_ok=True)
                         shutil.copyfile(filename1, filename2)
-                        toDelete.append(filename2)
+                        to_delete.append(filename2)
                         checksum2 = create_sha256(filename2)
                         if checksum1 == checksum2:
-                            print("copy of",filename,"verified, continuing")
+                            print("copy of", filename, "verified, continuing")
                         else:
-                            print("error in copying of",filename,"... exiting, try again")
+                            print("error in copying of", filename, "... exiting, try again")
                             sys.exit()
             # start creating the representations, content objects and bitstreams
             access_refs_dict = {}
@@ -164,7 +164,8 @@ def multi_upload_withXIP(valuables):
                 access_refs_dict = make_representation(xip, "Access", "Access", access_directory, asset_id, valuables)
             preservation_refs_dict = {}
             if preservation_representation:
-                preservation_refs_dict = make_representation(xip, "Preservation", "Preservation", preservation_directory, asset_id, valuables)
+                preservation_refs_dict = make_representation(xip, "Preservation", "Preservation",
+                                                             preservation_directory, asset_id, valuables)
             if access_refs_dict:
                 make_content_objects(xip, access_refs_dict, asset_id, asset_tag, "", "")
             if preservation_refs_dict:
@@ -176,9 +177,11 @@ def multi_upload_withXIP(valuables):
             if access_refs_dict:
                 make_bitstream(xip, access_refs_dict, access_directory, "Access1", access_representation)
             if preservation_representation:
-                make_bitstream(xip, preservation_refs_dict, preservation_directory, "Preservation1", preservation_representation)
+                make_bitstream(xip, preservation_refs_dict, preservation_directory,
+                               "Preservation1", preservation_representation)
             pax_folder = export_dir + "/" + asset_title
-            # currently unable to get xip to work with preservica ingest, uncomment the 4 lines below if/when it starts working
+            # currently unable to get xip to work with preservica ingest, uncomment the 4 lines below
+            # if/when it starts working
             pax_file = pax_folder + "/" + asset_title + ".xip"
             metadata = open(pax_file, "wt", encoding='utf-8')
             metadata.write(prettify(xip))
@@ -189,25 +192,25 @@ def multi_upload_withXIP(valuables):
             shutil.make_archive(archive_name, "zip", pax_folder)
             archive_name = archive_name + ".zip"
             archive_name2 = archive_name.replace(export_dir, tempy)
-            shutil.move(archive_name,archive_name2)
+            shutil.move(archive_name, archive_name2)
             make_opex(valuables, archive_name2)
             compiled_opex = export_dir + "/" + asset_id
             shutil.make_archive(compiled_opex, "zip", tempy)
             compiled_opex = compiled_opex + ".zip"
             valuables['compiled_opex'] = compiled_opex
-            print("uploading",asset_title)
+            print("uploading", asset_title)
             uploader(valuables)
-            toDelete.append(compiled_opex)
-            toDelete.append(archive_name2)
-            toDelete.append(archive_name2 + ".opex")
-            #cleanup
-            for item in toDelete:
+            to_delete.append(compiled_opex)
+            to_delete.append(archive_name2)
+            to_delete.append(archive_name2 + ".opex")
+            # cleanup
+            for item in to_delete:
                 os.remove(item)
             try:
                 os.rmdir(export_dir + "/" + asset_title)
                 os.rmdir(tempy)
             except:
-                print("\n","unable to remove staging folder for",asset_title)
+                print("\n", "unable to remove staging folder for", asset_title)
             finito = 1
         except KeyboardInterrupt:
             print("process paused, cleaning up current round")
@@ -225,18 +228,19 @@ def multi_upload_withXIP(valuables):
                 print("you chose to exit")
                 sys.exit()
 
+
 def multi_upload(valuables):
     # a trimmed down version of the version with XIP, because we honestly don't need the fluff
     print("to pause process press ctrl+c. If pausing during zip creation process may abort")
     finito = 0
     while finito == 0:
+        export_dir = valuables['export_directory']
         try:
-            toDelete = []
+            to_delete = []
             # unpack the dictionary to individual variables
             access_directory = valuables['access_directory']
             preservation_directory = valuables['preservation_directory']
             asset_title = valuables['asset_title']
-            export_dir = valuables['export_directory']
             valuables['asset_id'] = str(uuid.uuid4())
             asset_id = valuables['asset_id']
             # copy the files to the export area for processing
@@ -253,19 +257,19 @@ def multi_upload(valuables):
                             filename2 = os.path.join(access_representation, "English", filename)
                         elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
                             filename2 = os.path.join(access_representation, "Spanish", filename)
-                        elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                        elif filename.endswith(tuple(["mp4", "m4v", "mov"])):
                             filename2 = os.path.join(access_representation, "Movie", filename)
                         else:
                             filename2 = os.path.join(access_representation, filename.split(".")[0], filename)
                         if not os.path.exists(os.path.dirname(filename2)):
                             os.makedirs(os.path.dirname(filename2), exist_ok=True)
-                        shutil.copyfile(filename1,filename2)
-                        toDelete.append(filename2)
+                        shutil.copyfile(filename1, filename2)
+                        to_delete.append(filename2)
                         checksum2 = create_sha256(filename2)
                         if checksum1 == checksum2:
-                            print("copy of",filename,"verified, continuing")
+                            print("copy of", filename, "verified, continuing")
                         else:
-                            print("error in copying of",filename,"... exiting, try again")
+                            print("error in copying of", filename, "... exiting, try again")
                             sys.exit()
             for dirpath, dirnames, filenames in os.walk(preservation_directory):
                 for filename in filenames:
@@ -278,19 +282,19 @@ def multi_upload(valuables):
                             filename2 = os.path.join(preservation_representation, "English", filename)
                         elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
                             filename2 = os.path.join(preservation_representation, "Spanish", filename)
-                        elif filename.endswith(tuple(["mp4","m4v","mov"])):
+                        elif filename.endswith(tuple(["mp4", "m4v", "mov"])):
                             filename2 = os.path.join(preservation_representation, "Movie", filename)
                         else:
                             filename2 = os.path.join(preservation_representation, filename.split(".")[0], filename)
                         if not os.path.exists(os.path.dirname(filename2)):
                             os.makedirs(os.path.dirname(filename2), exist_ok=True)
                         shutil.copyfile(filename1, filename2)
-                        toDelete.append(filename2)
+                        to_delete.append(filename2)
                         checksum2 = create_sha256(filename2)
                         if checksum1 == checksum2:
-                            print("copy of",filename,"verified, continuing")
+                            print("copy of", filename, "verified, continuing")
                         else:
-                            print("error in copying of",filename,"... exiting, try again")
+                            print("error in copying of", filename, "... exiting, try again")
                             sys.exit()
             pax_folder = export_dir + "/" + asset_title
             tempy = export_dir + "/temp"
@@ -299,25 +303,25 @@ def multi_upload(valuables):
             shutil.make_archive(archive_name, "zip", pax_folder)
             archive_name = archive_name + ".zip"
             archive_name2 = archive_name.replace(export_dir, tempy)
-            shutil.move(archive_name,archive_name2)
+            shutil.move(archive_name, archive_name2)
             make_opex(valuables, archive_name2)
             compiled_opex = export_dir + "/" + asset_id
             shutil.make_archive(compiled_opex, "zip", tempy)
             compiled_opex = compiled_opex + ".zip"
             valuables['compiled_opex'] = compiled_opex
-            print("uploading",asset_title)
+            print("uploading", asset_title)
             uploader(valuables)
-            toDelete.append(compiled_opex)
-            toDelete.append(archive_name2)
-            toDelete.append(archive_name2 + ".opex")
-            #cleanup
-            for item in toDelete:
+            to_delete.append(compiled_opex)
+            to_delete.append(archive_name2)
+            to_delete.append(archive_name2 + ".opex")
+            # cleanup
+            for item in to_delete:
                 os.remove(item)
             try:
                 os.rmdir(export_dir + "/" + asset_title)
                 os.rmdir(tempy)
             except:
-                print("\n","unable to remove staging folder for",asset_title)
+                print("\n", "unable to remove staging folder for", asset_title)
             finito = 1
         except KeyboardInterrupt:
             print("process paused, cleaning up current round")
@@ -328,21 +332,23 @@ def multi_upload(valuables):
                     os.remove(filename)
             '''for item in toDelete:
                 os.remove(item)'''
-            resume = input("type 'resume' to resume processes:" )
+            resume = input("type 'resume' to resume processes:")
             if resume == "resume":
                 continue
             else:
                 print("you chose to exit")
                 sys.exit()
 
+
 def make_opex(valuables, filename2):
     opex = Element('opex:OPEXMetadata', {'xmlns:opex': 'http://www.openpreservationexchange.org/opex/v1.0'})
-    opexTransfer = SubElement(opex, "opex:Transfer")
-    opexSource = SubElement(opexTransfer, "opex:SourceID")
-    opexSource.text = valuables["asset_id"]
-    opexFixities = SubElement(opexTransfer, "opex:Fixities")
-    opexSHA256 = create_sha256(filename2)
-    opexFixity = SubElement(opexFixities, "opex:Fixity", {'type': 'SHA-256', 'value': opexSHA256})
+    opex_transfer = SubElement(opex, "opex:Transfer")
+    opex_source = SubElement(opex_transfer, "opex:SourceID")
+    opex_source.text = valuables["asset_id"]
+    opex_fixities = SubElement(opex_transfer, "opex:Fixities")
+    opex_sha256 = create_sha256(filename2)
+    opex_fixity = SubElement(opex_fixities, "opex:Fixity")
+    opex_fixity.attrib = {'type': 'SHA-256', 'value': opex_sha256}
     opex_properties = SubElement(opex, 'opex:Properties')
     opex_title = SubElement(opex_properties, 'opex:Title')
     opex_title.text = valuables['asset_title']
@@ -365,10 +371,11 @@ def make_opex(valuables, filename2):
             filedata = filedata.replace('<?xml version="1.0" encoding="UTF-8"?>', "")
             with open(export_file, "r") as r:
                 fileinfo = r.read()
-                fileinfo = fileinfo.replace("This is where the metadata goes",filedata)
+                fileinfo = fileinfo.replace("This is where the metadata goes", filedata)
                 with open(export_file, "w") as w:
                     w.write(fileinfo)
                     w.close()
+
 
 def create_sha256(filename):
     sha256 = hashlib.sha256()
@@ -381,20 +388,22 @@ def create_sha256(filename):
     fixity = sha256.hexdigest()
     return fixity
 
+
 def uploader(valuables):
     filelist = ["/media/sf_transfer_agent/nothing.txt"]
     logger = open("./transfer_agent_list.txt", "a")
     logger.close()
     if valuables['quiet_time'] is True:
-        quiet_time(quiet_start=valuables['quiet_start'],quiet_end=valuables['quiet_end'],interval=valuables['interval'])
+        quiet_time(quiet_start=valuables['quiet_start'], quiet_end=valuables['quiet_end'],
+                   interval=valuables['interval'])
     with open("./transfer_agent_list.txt", "r") as r:
         for line in r:
             line = line[:-1]
             filelist.append(line)
-    token = new_token(valuables['username'], valuables['password'], valuables['tenent'], valuables['prefix'])
+    token = new_token(valuables['username'], valuables['password'], valuables['tenant'], valuables['prefix'])
     print(token)
     current = time.asctime()
-    user_tenant = valuables['tenent']
+    user_tenant = valuables['tenant']
     user_domain = valuables['prefix']
     bucket = f'{user_tenant.lower()}.package.upload'
     endpoint = f'https://{user_domain}.preservica.com/api/s3/buckets'
@@ -404,6 +413,7 @@ def uploader(valuables):
     sip_name = valuables['compiled_opex']
     metadata = {'Metadata': {'structuralObjectreference': valuables['parent_uuid']}}
     switch = 0
+    copy = True
     while switch != 3:
         try:
             response = client.upload_file(sip_name, bucket, valuables['asset_id'] + ".zip", ExtraArgs=metadata,
@@ -419,8 +429,8 @@ def uploader(valuables):
             copy = True
     if copy is True:
         current = time.asctime()
-        newFile = sip_name.split("/")[-1]
-        newFile = "/media/sf_transfer_agent/" + newFile
+        new_file = sip_name.split("/")[-1]
+        new_file = "/media/sf_transfer_agent/" + new_file
         print(f"API uploads failed, copying to transfer agent at {current}")
         print("checking transfer agent for any lingering files first")
         for item in filelist:
@@ -429,13 +439,14 @@ def uploader(valuables):
                 print(f"waiting on {item} to finish as of {current}", end="\r")
                 time.sleep(30)
             print(f"{item} has already cleared transfer agent")
-        shutil.copyfile(sip_name,newFile + ".fail")
-        os.rename(newFile + ".fail",newFile)
+        shutil.copyfile(sip_name, new_file + ".fail")
+        os.rename(new_file + ".fail", new_file)
         current = time.asctime()
         print(f"package copied to transfer agent as of {current}, moving on")
         with open("./transfer_agent_list.txt", "a") as w:
-            w.write(newFile + "\n")
+            w.write(new_file + "\n")
         w.close()
+
 
 def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
     representation = SubElement(xip, 'Representation')
@@ -456,7 +467,7 @@ def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
             content_object.text = content_object_ref
             refs_dict[f] = content_object_ref
             counter += 1
-    #repFormat = SubElement(representation, "RepresentationFormats")
+    # repFormat = SubElement(representation, "RepresentationFormats")
     # if valuables['special_format'] == "film":
     #     repFormat1 = SubElement(repFormat, "RepresentationFormat")
     #     repFormat1_uuid = SubElement(repFormat1, "PUID")
@@ -492,6 +503,7 @@ def make_representation(xip, rep_name, rep_type, path, io_ref, valuables):
     #     repFormat2_valid.text = "false"
     return refs_dict
 
+
 def make_content_objects(xip, refs_dict, io_ref, tag, content_description, content_type):
     for filename, ref in refs_dict.items():
         content_object = SubElement(xip, 'ContentObject')
@@ -516,6 +528,7 @@ def make_content_objects(xip, refs_dict, io_ref, tag, content_description, conte
         custom_type.text = content_type
         parent = SubElement(content_object, "Parent")
         parent.text = io_ref
+
 
 def make_generation(xip, refs_dict, generation_label):
     for filename, ref in refs_dict.items():
@@ -544,14 +557,15 @@ def make_generation(xip, refs_dict, generation_label):
         SubElement(generation, "Formats")
         SubElement(generation, "Properties")
 
+
 def make_bitstream(xip, refs_dict, root_path, generation_label, representation_location):
     for filename, ref in refs_dict.items():
         bitstream = SubElement(xip, "Bitstream")
-        filenameElement = SubElement(bitstream, "Filename")
-        filenameElement.text = filename
+        filename_element = SubElement(bitstream, "Filename")
+        filename_element.text = filename
         filesize = SubElement(bitstream, "FileSize")
-        fullPath = os.path.join(root_path, filename)
-        file_stats = os.stat(fullPath)
+        full_path = os.path.join(root_path, filename)
+        file_stats = os.stat(full_path)
         filesize.text = str(file_stats.st_size)
         physloc = SubElement(bitstream, "PhysicalLocation")
         if filename.split(".")[-1] == "srt":
@@ -566,10 +580,11 @@ def make_bitstream(xip, refs_dict, root_path, generation_label, representation_l
             physloc.text = "Representation_" + generation_label[:-1] + "/" + filename.split(".")[0]
         fixities = SubElement(bitstream, "Fixities")
         fixity = SubElement(fixities, "Fixity")
-        fixityAlgorithmRef = SubElement(fixity, "FixityAlgorithmRef")
-        fixityAlgorithmRef.text = "SHA256"
-        fixityValue = SubElement(fixity, "FixityValue")
-        fixityValue.text = create_sha256(fullPath)
+        fixity_algorithm_ref = SubElement(fixity, "FixityAlgorithmRef")
+        fixity_algorithm_ref.text = "SHA256"
+        fixity_value = SubElement(fixity, "FixityValue")
+        fixity_value.text = create_sha256(full_path)
+
 
 def countdown(t):
     mins, secs = divmod(t, 60)
@@ -577,16 +592,20 @@ def countdown(t):
     while t:
         mins, secs = divmod(t, 60)
         timer = '{:02d}:{:02d}'.format(mins, secs)
-        print("waiting",timer1," minutes to let the system process upload:",timer, end="\r")
+        print("waiting", timer1, " minutes to let the system process upload:", timer, end="\r")
         time.sleep(1)
-        t-= 1
+        t -= 1
     print("moving to next one")
 
-def quiet_time(quiet_start=list,quiet_end=list, interval=int):
+
+def quiet_time(quiet_start=list, quiet_end=list, interval=int):
     now = datetime.datetime.now()
+    interval = int(interval)
+    quiet_start = list(quiet_start)
+    quiet_end = list(quiet_end)
     quiet_1 = now.replace(hour=quiet_start[0], minute=quiet_start[1], second=quiet_start[2])
     quiet_2 = now.replace(hour=quiet_end[0], minute=quiet_end[1], second=quiet_end[2])
-    while now > quiet_1 and now < quiet_2:
+    while quiet_1 < now < quiet_2:
         print(f"quiet time, waiting until {quiet_2} to resume, sleeping for {interval/60} minutes before checking back")
         time.sleep(interval)
         now = datetime.datetime.now()

@@ -18,7 +18,7 @@ preservation_folder = ../1976085/preservica_preservation1_lnk
 intermediary_folder = ../1976085/preservica_presentation2_lnk
 presentation_folder = ../1976085/preservica_presentation3_lnk
 [3_version_crawler_tree]
-root_folder = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_1677/staging/not_done/test
+root_folder = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_1677/staging/not_done/rejected/I
 preservation_folder = preservation1
 intermediary_folder = presentation2
 presentation_folder = presentation3

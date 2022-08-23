@@ -6,7 +6,7 @@ tenancy = input("tenancy: ")
 password = getpass.getpass("Enter password: ")
 valuables = {'username': username,
              'password': password,
-             'tenent': tenancy,
+             'tenant': tenancy,
              'prefix': prefix,
              'access1_directory': '/media/sf_G_DRIVE/working_electronicRecords/ancestry/1677/tester/32241_1220701439_2131/presentation2',
              'access2_directory': '/media/sf_G_DRIVE/working_electronicRecords/ancestry/1677/tester/32241_1220701439_2131/presentation3',

@@ -91,7 +91,7 @@ counter1 = 0
 counter2 = 0
 baseline_valuables = {'username': username,
              'password': password,
-             'tenent': tenancy,
+             'tenant': tenancy,
              'prefix': prefix,
              'access1_directory': dirpathA,
              'access2_directory': dirpath1,

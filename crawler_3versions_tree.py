@@ -6,14 +6,29 @@ import configparser
 import opexCreator.opexCreator
 from opexCreator import opexCreator_3versions
 
-def login(url, payload):
-    auth = requests.post(url, data=payload).json()
-    sessionToken = auth['token']
-    headers = {'Preservica-Access-Token': sessionToken}
-    headers['Content-Type'] = 'application/xml'
-    headers['Accept-Charset'] = 'UTF-8'
-    return headers
 
+def login(login_url, login_payload):
+    auth = requests.post(login_url, data=login_payload).json()
+    session_token = auth['token']
+    login_headers = {'Preservica-Access-Token': session_token, 'Content-Type': 'application/xml',
+                     'Accept-Charset': 'UTF-8'}
+    return login_headers
+
+
+# variables that are set later but also set here for best practice purposes
+dirpath1 = ""
+dirpathA = ""
+dirpath2 = ""
+standardDir = ""
+object_type = ""
+rooty = ""
+config = ""
+configfile = ""
+quiet_start = ""
+quiet_end = ""
+interval = ""
+delay = ""
+# the real variables being set
 username = input("Enter your username: ")
 password = getpass.getpass("Enter password: ")
 tenancy = input("Enter your tenancy name: ")
@@ -32,12 +47,13 @@ namespaces = {'xip': f'http://preservica.com/XIP/v{version}',
               'dcterms': 'http://dublincore.org/documents/dcmi-terms',
               'tslac': 'https://www.tsl.texas.gov/'}
 
-print("warning: this crawler is meant to take care of 3 version assets where the versions are children of the parent asset folder, like so:")
+print("warning: this crawler is meant to take care of 3 version assets where the versions are children of the "
+      "parent asset folder, like so:")
 print("asset name: myDocument")
 print("main presentation: myDocument/presentation2/myDocument.pdf")
 print("intermediary presentation: myDocument/presentation1/myDocument1.jpg myDocument2.jpg, etc.")
 print("preservation master: myDocument/preservation1/myDocument1.tif myDocument2.tif, etc.")
-#inputs
+# inputs
 quiet_time = input("implement quiet time? use yes/no: ")
 if quiet_time == "no":
     quiet_time = ""
@@ -47,22 +63,22 @@ if configuration == "yes":
     config = configparser.ConfigParser()
     configfile = input("name of config file using relative filepath: ")
     config.read(configfile)
-    rooty = config.get('3_version_crawler_tree','root_folder')
-    dirpath1 = config.get('3_version_crawler_tree','presentation_folder')
-    dirpath2 = config.get('3_version_crawler_tree','preservation_folder')
-    dirpathA = config.get('3_version_crawler_tree','intermediary_folder')
-    standardDir = config.get('general','standard_directory_uuid')
-    suffixCount = int(config.get('general','suffix_count'))
-    object_type = config.get('general','object_type')
-    delay = int(config.get('general','delay'))
+    rooty = config.get('3_version_crawler_tree', 'root_folder')
+    dirpath1 = config.get('3_version_crawler_tree', 'presentation_folder')
+    dirpath2 = config.get('3_version_crawler_tree', 'preservation_folder')
+    dirpathA = config.get('3_version_crawler_tree', 'intermediary_folder')
+    standardDir = config.get('general', 'standard_directory_uuid')
+    suffixCount = int(config.get('general', 'suffix_count'))
+    object_type = config.get('general', 'object_type')
+    delay = int(config.get('general', 'delay'))
     if quiet_time is True:
-        quiet_start = config.get('general','quiet_start')
+        quiet_start = config.get('general', 'quiet_start')
         quiet_start = quiet_start.split(":")
-        quiet_start = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
-        quiet_end = config.get('general','quiet_end')
+        quiet_start = [int(quiet_start[0]), int(quiet_start[1]), int(quiet_start[2])]
+        quiet_end = config.get('general', 'quiet_end')
         quiet_end = quiet_end.split(":")
-        quiet_end = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
-        interval = int(config.get('general','interval'))
+        quiet_end = [int(quiet_end[0]), int(quiet_end[1]), int(quiet_end[2])]
+        interval = int(config.get('general', 'interval'))
 if configuration == "no":
     rooty = input("root filepath to crawl: ")
     dirpath1 = input("root filepath to access files: ")
@@ -81,10 +97,10 @@ if configuration == "no":
     if quiet_time is True:
         quiet_start = input("input quiet time start as hh:mm:ss:")
         quiet_start = quiet_start.split(":")
-        quiet_start = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
+        quiet_start = [int(quiet_start[0]), int(quiet_start[1]), int(quiet_start[2])]
         quiet_end = input("input quiet time end as hh:mm:ss: ")
         quiet_end = quiet_end.split(":")
-        quiet_end = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
+        quiet_end = [int(quiet_end[0]), int(quiet_end[1]), int(quiet_end[2])]
         interval = int(input("time in seconds between checking if sleep timer condition has been met: "))
 # computer section
 base_url = f"https://{prefix}.preservica.com/api/entity/structural-objects/"
@@ -96,39 +112,39 @@ helperFile = "helperFile.txt"
 counter1 = 0
 counter2 = 0
 baseline_valuables = {'username': username,
-             'password': password,
-             'tenent': tenancy,
-             'prefix': prefix,
-             'access1_directory': dirpathA,
-             'access2_directory': dirpath1,
-             'preservation_directory': dirpath2,
-             'asset_title': '',
-             'asset_tag': 'open',
-             'parent_uuid': standardDir,
-             'export_directory': './export',
-             'asset_description': '',
-             'ignore': [".metadata", ".db", ".md5"],
-             'special_format': object_type,
+                      'password': password,
+                      'tenant': tenancy,
+                      'prefix': prefix,
+                      'access1_directory': dirpathA,
+                      'access2_directory': dirpath1,
+                      'preservation_directory': dirpath2,
+                      'asset_title': '',
+                      'asset_tag': 'open',
+                      'parent_uuid': standardDir,
+                      'export_directory': './export',
+                      'asset_description': '',
+                      'ignore': [".metadata", ".db", ".md5"],
+                      'special_format': object_type,
                       'quiet_time': quiet_time}
-#start
+# start
 setup = ""
 for dirpath, dirnames, filenames in os.walk(rooty):
     for filename in filenames:
         valuables = baseline_valuables
         valuables['quiet_time'] = quiet_time
         if dirpath1 in str(dirpath):
-            if not filename.endswith((".metadata")):
+            if not filename.endswith(".metadata"):
                 if dirpath != setup:
                     if quiet_time is True:
                         if configuration == "yes":
                             config.read(configfile)
-                            quiet_start = config.get('general','quiet_start')
+                            quiet_start = config.get('general', 'quiet_start')
                             quiet_start = quiet_start.split(":")
-                            valuables['quiet_start'] = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
-                            quiet_end = config.get('general','quiet_end')
+                            valuables['quiet_start'] = [int(quiet_start[0]), int(quiet_start[1]), int(quiet_start[2])]
+                            quiet_end = config.get('general', 'quiet_end')
                             quiet_end = quiet_end.split(":")
-                            valuables['quiet_end'] = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
-                            valuables['interval'] = int(config.get('general','interval'))
+                            valuables['quiet_end'] = [int(quiet_end[0]), int(quiet_end[1]), int(quiet_end[2])]
+                            valuables['interval'] = int(config.get('general', 'interval'))
                         else:
                             valuables['quiet_start'] = quiet_start
                             valuables['quiet_end'] = quiet_end
@@ -140,8 +156,8 @@ for dirpath, dirnames, filenames in os.walk(rooty):
                     fileLength = len(filename)
                     filename = os.path.join(dirpath, filename)
                     metadata_file = os.path.join(dirpath, valuables['asset_title'] + ".metadata")
-                    metadata_file2 = metadata_file.replace(dirpath1,dirpath2)
-                    metadata_file3 = metadata_file.replace(dirpath1,dirpathA)
+                    metadata_file2 = metadata_file.replace(dirpath1, dirpath2)
+                    metadata_file3 = metadata_file.replace(dirpath1, dirpathA)
                     if os.path.isfile(metadata_file):
                         valuables['metadata_file'] = metadata_file
                     elif os.path.isfile(metadata_file2):
@@ -151,7 +167,7 @@ for dirpath, dirnames, filenames in os.walk(rooty):
                     # musical chairs with directory paths so we don't mess up the original variable values
                     dirpath3 = dirpath
                     dirpath5 = dirpath.replace(dirpath1, dirpath2)
-                    dirpathB = dirpath.replace(dirpath1,dirpathA)
+                    dirpathB = dirpath.replace(dirpath1, dirpathA)
                     dirpath4 = valuables['asset_title'] + "/" + dirpath1
                     math = len(valuables['asset_title']) + 1
                     valuables['access2_directory'] = dirpath3
@@ -160,14 +176,17 @@ for dirpath, dirnames, filenames in os.walk(rooty):
                     if dirpath4 != dirpath3:
                         print("not a root asset, sending to subfolder")
                         dirTitle = dirpath3.split("/")[-3]
-                        print("drectory title:", dirTitle)
+                        print("directory title:", dirTitle)
                         if dirTitle == secondaryTitle:
                             valuables['parent_uuid'] = secondaryDir
                             opexCreator_3versions.multi_upload_withXIP(valuables)
                         if dirTitle != secondaryTitle:
                             print("directory doesn't exist yet, creating it")
                             headers = login(url, payload)
-                            data = f'<StructuralObject xmlns="http://preservica.com/XIP/v{version}"><Title>' + dirTitle + '</Title><Description>' + dirTitle + '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + '</Parent></StructuralObject>'
+                            data = f'<StructuralObject xmlns="http://preservica.com/XIP/v{version}"><Title>' + \
+                                   dirTitle + '</Title><Description>' + dirTitle + \
+                                   '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + \
+                                   '</Parent></StructuralObject>'
                             response = requests.post(base_url, headers=headers, data=data)
                             status = response.status_code
                             print(status)
@@ -192,7 +211,7 @@ for dirpath, dirnames, filenames in os.walk(rooty):
                     else:
                         opexCreator_3versions.multi_upload_withXIP(valuables)
                     counter1 += 1
-                    print(counter1,"units uploaded thus far")
+                    print(counter1, "units uploaded thus far")
                     if delay > 0:
                         opexCreator.opexCreator.countdown(delay)
                     log.write(valuables['asset_title'] + " upload complete" + "\n")

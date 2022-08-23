@@ -1,182 +1,229 @@
-import sys
-
-import PySimpleGUI as sg
+import configparser
 import os
+
+import PySimpleGUI as Sg
 import lxml.etree as ET
 import requests
-import getpass
-import configparser
+
 import opexCreator.opexCreator
 from opexCreator import opexCreator_3versions
 
-def login(url, payload):
-    auth = requests.post(url, data=payload).json()
-    sessionToken = auth['token']
-    headers = {'Preservica-Access-Token': sessionToken}
-    headers['Content-Type'] = 'application/xml'
-    headers['Accept-Charset'] = 'UTF-8'
-    return headers
+
+def login(login_url, login_payload):
+    auth = requests.post(login_url, data=login_payload).json()
+    session_token = auth['token']
+    login_headers = {'Preservica-Access-Token': session_token, 'Content-Type': 'application/xml',
+                     'Accept-Charset': 'UTF-8'}
+    return login_headers
 
 
+# set some variables as a sacrifice to the best practices gods
+opex_type = ""
+quiet_start = ""
+quiet_end = ""
+interval = ""
+config = ""
 
+# the real code
+my_icon = b'iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAMAAAAOusbgAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdT' \
+          b'AAAOpgAAA6mAAAF3CculE8AAACi1BMVEUAAABVqlU8pUtEnkRDoUhDoUhHnEdCoEZEn0dEoEhDoEhDoEdDoEdDoEdCoUdAqkBEoUdE' \
+          b'n0dEoEdDoEdDoEhDoEhCn0hHo0dDoUhDoEdDoEdEn0dEoEZAn0pAn0BCn0ZEoUdDoEdEoEdGokZDoEdDoEdDoEdCnEpDoEZDoEZDoE' \
+          b'dEoUdAo0dApElDoEdDoUdFnUVAv0BDoUdDoEdEn0hEokhDoEZDoEdBoEVNmU1DoEdDoEc5qlVGn0ZDoEdGokZJkklDn0hEoEhDoUhJ' \
+          b'pElDoUNDoEZGokZAn0hGokZDoEdDoEZJnklDoUdDoEdDm0M7nU5DoEhDoEZCoEdBoEdDoEdEokRDoUdCoEdCoUdCoEdDoEdDoEdDoE' \
+          b'dCn0hBn0hEn0lCoUZDoUZDoEhDoEdDoEdEoEdFoEhDoUdDn0dDoUdBoEhVqlWAgIBEoEdDn0dDn0ZGnkYzmTNDoEdCn0dDoUZDoEdC' \
+          b'oEhDn0ZEoEdDoEdDn0dApk1DoUdDoEdDoEdDoEdCoElCoEhDoEdDoUdFn0VDoEdCoEZDoEdCoUdDoEdDn0dDoEhEmURDoEZDoEdDn0' \
+          b'ZFoklCoEdDoEdCoUdCn0dDn0dBnUdDoEdEoEcA/wBCnkZDoEdEn0ZCoEdCoEdCoUhDoEdDoEdDn0dEn0dDoEdEoEZDoUpDoEZEokRE' \
+          b'n0pEoEdCnkZCn0ZCoEhDoEdCoUZDnklEokhDoUZDoEdDoEZDn0ZEoEdDn0dDoEdEn0hDoUhDoEdDoUZDn0dCoEZCoUdCnkdEoEhDoE' \
+          b'dDoEdDoEdDoEdEoEdDn0ZDoEZCoUhCoEVDoEdCoUdDoUhDn0dDoEdDoEdBnUhBoEZEoEZAn0BDoEdDoEf///9cfCvaAAAA13RSTlMA' \
+          b'BhEiLjkSPmWLstr62WQMRIjM/d2ZVRlyyfzIcRgITaq7XguM8fAfkfb5oiQcn50aBG/0gDzS0TsKm/4JKNYsB6C5vQ4TxxYgIeXkFd' \
+          b'jcFw3LnGEr9SnQ05qWc85+YEo4SV9u8uGPQ0GN4E4DAktIRR0F911XiVlQVreFFIKz+8IjxPPFJb90rK34kGMPhnaVP9fNd2h9L+fb' \
+          b'AULvYryph+zVsFqBaSajHi2eOsCOlH8qR0zmp5hTPeN1at+KqIOlMnzBw8+2l1hbUUbibFy4xsonM2YQr1TiNPUAAAABYktHRNgADU' \
+          b'euAAAAB3RJTUUH5gMSCgkxPPKJXgAABj1JREFUaN7tW/tfVFUQvywuzxUWVlBRQHnJQ1zegqCCaECCIPFQDMg0yARCKDJfq4CFQKVY' \
+          b'moZaWFmIYlr0tKeU9rDsdf6d+vCJ3dm7986Zu3tuH39wftz7PfPdPTtnZs7MXEl6IPe5eBm85xiNc7wNXv8Xo4+vn39AoInZxTQ3wD' \
+          b'/I16ArabA5JNTClGVeWLhO5PMXLIxgqEQsWhwpmjUqeomJEcSyNCZW5I+Ni2dkSfAX9bOXJSYxTZKcslwAbeoKE9MsJmuah7TpGfHM' \
+          b'LcnM8uiAZ+cwt2Vlrtu0eavymQeSH1bgHu/qHOahrFnrDm9MJvNYkvw00xYWMSFi1WhjweuYICler4V3w0NMmISW0HlL5zKBMo/sx8' \
+          b'oeZkJlYymNt7yCCZZNlRTeqlAmXDZXEZKpdUwHKS7kEhcxXaSax/sI00licN6aWr2IM+sw3oJ6pptsyUOItzIdpQGJ+/l6EucbVfOc' \
+          b'eqar5KSrEG8j53KPWhubms3Gx8zbH2+sDk2mrtuhkk/uJK1+oqVV5g28ntz1FGlp/HxF4hUkF7S7TWlte8dSyupVirGQkD+veVrdMj' \
+          b'u3EFL9PQoLGwhpI3YUpa4sC1dFosL9qJtrUs/w/O2zXDNLcg2Q/rw13R380GbmetweF2fJu6okd1CCeSdv3xLkSf5zvIvvXlr6Es37' \
+          b'n5+XLdjHwe935Tjg7V3u+ulBjqJDMtOy4fDDMm93pLF3xt309WcddX7S9gKuyeac7b7IQTtfgo4OgGiSf8yZevkgrivDCb0QBw85gf' \
+          b'1ktls77PR4F66rH2Jfwus5mT4Q/LIr4CB8bsBvezaYce7WEMJf4e7fcVxbM4C24K6yBkBPKG6ODQb5OjyfiAPQlfi1CzoalQA4As0e' \
+          b'vxKcBJdD/NQ3Ap2vqoFeA6BTuC9ylB598T/lNLivv64GOtPuQJ3G9WU7zgfuXs86VIarw95woM6OogrP2YFxKO482MQLNNMvJkaoQy' \
+          b'juTfBT3lKHjQHiEFThRTsuEMU1ORSuxYrGedQb2Igdh3vXVofCtzEcOMqteEphN1XcCEEMeAfDvevAXcI1ds0GVhxWRXSGWaCqgGuc' \
+          b'df2lOAwk0u9huBYQlHGN7/8HG8eTLWCtARjwMgDiOfqs75/A/QfQdwUDHgPABEYxQ0HEA5qJBW21VfNWCzKuq5qNawMOA+XXSQx3zY' \
+          b'FbTztOHAdSRwy0wIF8QHMgHJd53aHwBtFlXsdvbnYcXiUOcihMw4IE6O0FEYMEHhaBR5I+pIXFIWJYxBOBXqDxI3XYFID1ExMBPPWp' \
+          b'BQnkx+owMzhNmcTU5xPcCEHLrOtTSrKXjeubcLTf8fTWH2ziZ2qgzwGoh5reSnhJLxB2sL9QxlR0AVAFNaGXrpL3WvJVvMJYTgAIHn' \
+          b'TYTVhAwKEXJN5dYhtEfIlr2w6vqXhBwLYM6t3vCvgKPt+DhyaTU2NkEf4lv3a6eQfJTkttkNPjFEZ2C5K0gFPTy3augCwBxyB/wLmT' \
+          b'9o1FSwk3klN8yZGVp8q+/W4myYi/deqIbHBjmlMflLUav+dUiX5wLSwZvL19XD+d5CgKkOFv82qBTbQC2x2eHnmBrSCBs8D2I4W3g1' \
+          b'd7Ho2SL7nJ+6qDNwilTO6oSojLmkhu2dgW43nZuFahr3qcX2BPQQvlhSH8QvmQ0kgPoTUw0qzO+xOhNTCYqrTSSmlnXNmr3AyJLqas' \
+          b'nlL8ymm09s/PiZ0ybxLV2kJr/4yqdM4XUxtXtvqirOFo84TRHH3u2uVp8vjTL2otvmmmq5xsU7OPXF2bmhajumVO6Uk8ic0E1uvHm4' \
+          b'MOWV3aqRdv32rc693Wi/guz99a9eEN4waYrl/14D1PGOvK+008771gSjA/MCKa9wxxpKt0o1he6ljVv8xCB6s2aRiI9RH4P28u1zK0' \
+          b'F7tPmD1XSZrEq1rQ+e3SPJl5t0+An7zjzijq7x5HjLEa94ZvCxo8is+WySi3543/uOc+77TRkwHr9j8T3KNNyGjzdHB/a7J22uQpEQ' \
+          b'P8lSEaB/kGw1IFvTdQ2aNhw0dDSiRxUkh8QSNC7AsaM1KS0cupV9hu7SiXdJFY9ZdwLGNh4X9Jeoohe7jnYgWo6XeP/N0znKsvKbzu' \
+          b'GMrGjcbxMkO69EDuc/kH6DhA657cRLAAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjItMDMtMThUMTA6MDk6NDkrMDA6MDAF5/xCAAAAJX' \
+          b'RFWHRkYXRlOm1vZGlmeQAyMDIyLTAzLTE4VDEwOjA5OjQ5KzAwOjAwdLpE/gAAAABJRU5ErkJggg=='
+
+Sg.theme('DarkGreen5')
 layout = [
     [
-        sg.Radio("2-version crawler","radio1", default=False,key="-TYPE_2v-"),
-        sg.Radio("3-version crawler","radio1", default=False,key="-TYPE_3v-"),
-        sg.Radio("3-version crawler tree","radio1", default=False,key="-TYPE_3v-tree-"),
-        sg.Button("Push to Update")
+        Sg.Radio("2-version crawler", "radio1", default=False, key="-TYPE_2v-"),
+        Sg.Radio("3-version crawler", "radio1", default=False, key="-TYPE_3v-"),
+        Sg.Radio("3-version crawler tree", "radio1", default=False, key="-TYPE_3v-tree-"),
+        Sg.Button("Push to Update")
     ],
     [
-      sg.Checkbox("Use config file?", checkbox_color="dark green",key="-CONFIG-",tooltip="to pre-populate the necessary fields", enable_events=True)
+      Sg.Checkbox("Use config file?", checkbox_color="dark green", key="-CONFIG-",
+                  tooltip="to pre-populate the necessary fields", enable_events=True)
     ],
     [
-        sg.Push(),
-        sg.Text("config file"),
-        sg.In(size=(50,1), enable_events=True, key="-CONFIGFILE-"),
-        sg.FileBrowse(file_types=(("text files only", "*.txt"),))
+        Sg.Push(),
+        Sg.Text("config file"),
+        Sg.In(size=(50, 1), enable_events=True, key="-CONFIGFILE-"),
+        Sg.FileBrowse(file_types=(("text files only", "*.txt"),))
     ],
     [
-        sg.Push(),
-        sg.Button("Load", tooltip="Use this button to load the variables from the configfile"),
-        sg.Push()
+        Sg.Push(),
+        Sg.Button("Load", tooltip="Use this button to load the variables from the configfile"),
+        Sg.Push()
     ],
     [
-        sg.Push(),
-        sg.Text("upload staging location"),
-        sg.In("", key="-UploadStaging-"),  # sg.In(size=(50, 1), enable_events=True, key="-UploadStaging-"),
-        sg.FolderBrowse()
+        Sg.Push(),
+        Sg.Text("upload staging location"),
+        Sg.In("", key="-UploadStaging-"),  # Sg.In(size=(50, 1), enable_events=True, key="-UploadStaging-"),
+        Sg.FolderBrowse()
     ],
     [
-        sg.Push(),
-        sg.Text("root folder to start from", visible=False, key="-ROOT_Text-"),
-        sg.Input("", size=(50,1), visible=False, key="-ROOT-"),
+        Sg.Push(),
+        Sg.Text("root folder to start from", visible=False, key="-ROOT_Text-"),
+        Sg.Input("", size=(50, 1), visible=False, key="-ROOT-"),
     ],
     [
-        sg.Push(),
-        sg.Text("main preservation folder", visible=False, key="-preservation_folder_Text-"),
-        sg.Input("", size=(50, 1), visible=False, key="-preservation_folder-")
+        Sg.Push(),
+        Sg.Text("main preservation folder", visible=False, key="-preservation_folder_Text-"),
+        Sg.Input("", size=(50, 1), visible=False, key="-preservation_folder-")
     ],
     [
-        sg.Push(),
-        sg.Text("intermediary folder", visible=False, key="-intermediary_folder_Text-"),
-        sg.Input("", size=(50, 1), visible=False, key="-intermediary_folder-")
+        Sg.Push(),
+        Sg.Text("intermediary folder", visible=False, key="-intermediary_folder_Text-"),
+        Sg.Input("", size=(50, 1), visible=False, key="-intermediary_folder-")
     ],
     [
-        sg.Push(),
-        sg.Text("main presentation folder", visible=False, key="-presentation_folder_Text-"),
-        sg.Input("", size=(50, 1), visible=False, key="-presentation_folder-")
+        Sg.Push(),
+        Sg.Text("main presentation folder", visible=False, key="-presentation_folder_Text-"),
+        Sg.Input("", size=(50, 1), visible=False, key="-presentation_folder-")
     ],
     [
-        sg.Push(),
-        sg.Text("Name of folder holding preservation files", visible=False, key="-preservation1_Text-"),
-        sg.Input("", size=(50, 1), visible=False, key="-preservation1-")
+        Sg.Push(),
+        Sg.Text("Name of folder holding preservation files", visible=False, key="-preservation1_Text-"),
+        Sg.Input("", size=(50, 1), visible=False, key="-preservation1-")
     ],
     [
-        sg.Push(),
-        sg.Text("Name of folder holding intermediary files", visible=False, key="-presentation2_Text-"),
-        sg.Input("", size=(50, 1), visible=False, key="-presentation2-")
+        Sg.Push(),
+        Sg.Text("Name of folder holding intermediary files", visible=False, key="-presentation2_Text-"),
+        Sg.Input("", size=(50, 1), visible=False, key="-presentation2-")
     ],
     [
-        sg.Push(),
-        sg.Text("Name of folder holding presentation files", visible=False, key="-presentation3_Text-"),
-        sg.Input("", size=(50, 1), visible=False, key="-presentation3-")
+        Sg.Push(),
+        Sg.Text("Name of folder holding presentation files", visible=False, key="-presentation3_Text-"),
+        Sg.Input("", size=(50, 1), visible=False, key="-presentation3-")
     ],
     [
-        sg.Text("General variables", text_color="orchid1", font=("Calibri", "12", "underline"))
+        Sg.Text("General variables", text_color="orchid1", font=("Calibri", "12", "underline"))
     ],
     [
-        sg.Push(),
-        sg.Text("Preservica Version:", key="-PreservicaVersion_TEXT-"),
-        sg.Input("", size=(50, 1), key="-PreservicaVersion-")
+        Sg.Push(),
+        Sg.Text("Preservica Version:", key="-PreservicaVersion_TEXT-"),
+        Sg.Input("", size=(50, 1), key="-PreservicaVersion-")
     ],
     [
-        sg.Push(),
-        sg.Text("UUID to upload to", visible=True, key="-UUID_Text-"),
-        sg.Input("", size=(50, 1), visible=True, key='-UUID-')
+        Sg.Push(),
+        Sg.Text("UUID to upload to", visible=True, key="-UUID_Text-"),
+        Sg.Input("", size=(50, 1), visible=True, key='-UUID-')
     ],
     [
-        sg.Push(),
-        sg.Text("Object type", visible=True, key="-TYPE_Text-"),
-        sg.Input("", size=(50, 1), visible=True, key="-TYPE-")
+        Sg.Push(),
+        Sg.Text("Object type", visible=True, key="-TYPE_Text-"),
+        Sg.Input("", size=(50, 1), visible=True, key="-TYPE-")
     ],
     [
-        sg.Push(),
-        sg.Text("Delay in seconds", visible=True, key="-DELAY_Text-"),
-        sg.Input("", size=(50, 1), visible=True, key="-DELAY-")
+        Sg.Push(),
+        Sg.Text("Delay in seconds", visible=True, key="-DELAY_Text-"),
+        Sg.Input("", size=(50, 1), visible=True, key="-DELAY-")
     ],
     [
-        sg.Push(),
-        sg.Text("When to start quiet time, leave blank if n/a", visible=True, key="-QUIET_Start_Text-"),
-        sg.Input("", size=(50, 1), visible=True, key="-QUIET_Start-")
+        Sg.Push(),
+        Sg.Text("When to start quiet time, leave blank if n/a", visible=True, key="-QUIET_Start_Text-"),
+        Sg.Input("", size=(50, 1), visible=True, key="-QUIET_Start-")
     ],
     [
-        sg.Push(),
-        sg.Text("When to end quiet time, leave blank if N/A", visible=True, key="-QUIET_End_Text-"),
-        sg.Input("", size=(50, 1), visible=True, key="-QUIET_End-")
+        Sg.Push(),
+        Sg.Text("When to end quiet time, leave blank if N/A", visible=True, key="-QUIET_End_Text-"),
+        Sg.Input("", size=(50, 1), visible=True, key="-QUIET_End-")
     ],
     [
-        sg.Push(),
-        sg.Text("Time to pause between uploads", visible=True, key="-INTERVAL_Text-"),
-        sg.Input("", size=(50, 1), visible=True, key="-INTERVAL-")
+        Sg.Push(),
+        Sg.Text("Time to pause between uploads", visible=True, key="-INTERVAL_Text-"),
+        Sg.Input("", size=(50, 1), visible=True, key="-INTERVAL-")
     ],
     [
-      sg.Checkbox("Implement Quiet time?", checkbox_color="dark green",key="-QuietTime-",tooltip="uploads from crawlers will pause during specified quiet time")
+      Sg.Checkbox("Implement Quiet time?", checkbox_color="dark green", key="-QuietTime-",
+                  tooltip="uploads from crawlers will pause during specified quiet time")
     ],
     [
-        sg.Text("Upload variables", text_color="orchid1", font=("Calibri", "12", "underline"))
+        Sg.Text("Upload variables", text_color="orchid1", font=("Calibri", "12", "underline"))
     ],
     [
-        sg.Push(),
-        sg.Text("Username:", key="-USERNAME_TEXT-"),
-        sg.Input("", size=(50, 1), key="-USERNAME-")
+        Sg.Push(),
+        Sg.Text("Username:", key="-USERNAME_TEXT-"),
+        Sg.Input("", size=(50, 1), key="-USERNAME-")
     ],
     [
-        sg.Push(),
-        sg.Text("Password:", key="-PASSWORD_TEXT-"),
-        sg.Input("", size=(50, 1), password_char="#", key="-PASSWORD-")
+        Sg.Push(),
+        Sg.Text("Password:", key="-PASSWORD_TEXT-"),
+        Sg.Input("", size=(50, 1), password_char="#", key="-PASSWORD-")
     ],
     [
-        sg.Push(),
-        sg.Text("Domain Prefix:", key="-PREFIX_TEXT-"),
-        sg.Input("", size=(50, 1), key="-PREFIX-")
+        Sg.Push(),
+        Sg.Text("Domain Prefix:", key="-PREFIX_TEXT-"),
+        Sg.Input("", size=(50, 1), key="-PREFIX-")
     ],
     [
-        sg.Push(),
-        sg.Text("Tenancy abbreviation:", key="-TENANCY_TEXT-"),
-        sg.Input("", size=(50, 1), key="-TENANCY-")
+        Sg.Push(),
+        Sg.Text("Tenancy abbreviation:", key="-TENANCY_TEXT-"),
+        Sg.Input("", size=(50, 1), key="-TENANCY-")
     ],
     [
-        sg.Text("Select execute to start processing")
+        Sg.Text("Select execute to start processing")
     ],
     [
-        sg.Push(),
-        sg.Button("Execute", tooltip="This will start the program running."),
-        sg.Push()
+        Sg.Push(),
+        Sg.Button("Execute", tooltip="This will start the program running."),
+        Sg.Push()
     ],
     [
-        sg.Text("Select Close to close the window.")
+        Sg.Text("Select Close to close the window.")
     ],
-    [sg.Button("Close",
-               tooltip="Close this window. Other processes you started must be finished before this button will do anything.",
+    [Sg.Button("Close",
+               tooltip="Close this window. Other processes you started must be finished before this button will "
+                       "do anything.",
                bind_return_key=True)],
     [
-        sg.ProgressBar(1, orientation="h", size=(50, 20), bar_color="dark green", key="-Progress-", border_width=5,
+        Sg.ProgressBar(1, orientation="h", size=(50, 20), bar_color="dark green", key="-Progress-", border_width=5,
                        relief="RELIEF_SUNKEN")
     ],
     [
-        sg.Text("", key="-STATUS-")
+        Sg.Text("", key="-STATUS-")
     ],
     [
-        sg.Multiline(default_text="Click execute to show progress\n------------------------------", size=(70, 5),
+        Sg.Multiline(default_text="Click execute to show progress\n------------------------------", size=(70, 5),
                      auto_refresh=True, reroute_stdout=False, key="-OUTPUT-", autoscroll=True, border_width=5),
     ],
     ''''''
 ]
 
-window = sg.Window(
+window = Sg.Window(
     "Opex Compiler Graphical interface",
     layout,
-    icon="opex_icon.png",
+    icon=my_icon,
     button_color="dark green",
 
 )
@@ -256,28 +303,28 @@ while True:
     if quiet_time is True:
         quiet_start = values['-QUIET_Start-']
         quiet_start = quiet_start.split(":")
-        quiet_start = [int(quiet_start[0]),int(quiet_start[1]),int(quiet_start[2])]
+        quiet_start = [int(quiet_start[0]), int(quiet_start[1]), int(quiet_start[2])]
         quiet_end = values['-QUIET_End-']
         quiet_end = quiet_end.split(":")
-        quiet_end = [int(quiet_end[0]),int(quiet_end[1]),int(quiet_end[2])]
+        quiet_end = [int(quiet_end[0]), int(quiet_end[1]), int(quiet_end[2])]
         interval = int(values['-INTERVAL-'])
     staging = values['-UploadStaging-']
     base_url = f"https://{prefix}.preservica.com/api/entity/structural-objects/"
-    baseline_valuables = {'username':username,
-                          'password':password,
-                          'tenent':tenancy,
-                          'prefix':prefix,
-                          'asset_title':'',
-                          'asset_tag':'open',
-                          'parent_uuid':standardDir,
-                          'export_directory':staging,
-                          'asset_description':'',
-                          'ignore':['.metadata','.db'],
-                          'special_format':object_type,
-                          'quiet_time':False}
+    baseline_valuables = {'username': username,
+                          'password': password,
+                          'tenant': tenancy,
+                          'prefix': prefix,
+                          'asset_title': '',
+                          'asset_tag': 'open',
+                          'parent_uuid': standardDir,
+                          'export_directory': staging,
+                          'asset_description': '',
+                          'ignore': ['.metadata', '.db'],
+                          'special_format': object_type,
+                          'quiet_time': False}
     secondaryDir = ""
     secondaryTitle = ""
-    log = open("log_multipathAssets.txt","a")
+    log = open("log_multipathAssets.txt", "a")
     helperFile = "helperFile.txt"
     counter1 = 0
     counter2 = 0
@@ -287,41 +334,41 @@ while True:
             config = configparser.ConfigParser()
             config.read(configfile)
             if opex_type == "3versions_crawler_tree":
-                var = config.get('3_version_crawler_tree','root_folder')
+                var = config.get('3_version_crawler_tree', 'root_folder')
                 window['-ROOT-'].update(var)
-                var = config.get('3_version_crawler_tree','preservation_folder')
+                var = config.get('3_version_crawler_tree', 'preservation_folder')
                 window['-preservation1-'].update(var)
-                var = config.get('3_version_crawler_tree','intermediary_folder')
+                var = config.get('3_version_crawler_tree', 'intermediary_folder')
                 window['-presentation2-'].update(var)
-                var = config.get('3_version_crawler_tree','presentation_folder')
+                var = config.get('3_version_crawler_tree', 'presentation_folder')
                 window['-presentation3-'].update(var)
             if opex_type == "2versions_crawler":
-                var = config.get('2_version_crawler','preservation_folder')
+                var = config.get('2_version_crawler', 'preservation_folder')
                 window['-preservation_folder-'].update(var)
-                var = config.get('2_version_crawler','presentation_folder')
+                var = config.get('2_version_crawler', 'presentation_folder')
                 window['-presentation_folder-'].update(var)
             if opex_type == "3versions_crawler":
-                var = config.get('3_version_crawler','preservation_folder')
+                var = config.get('3_version_crawler', 'preservation_folder')
                 window['-preservation_folder-'].update(var)
-                var = config.get('3_version_crawler','intermediary_folder')
+                var = config.get('3_version_crawler', 'intermediary_folder')
                 window['-intermediary_folder-'].update(var)
-                var = config.get('3_version_crawler','presentation_folder')
+                var = config.get('3_version_crawler', 'presentation_folder')
                 window['-presentation_folder-'].update(var)
-            var = config.get('general','preservica_version')
+            var = config.get('general', 'preservica_version')
             window['-PreservicaVersion-'].update(var)
-            var = config.get('general','standard_directory_uuid')
+            var = config.get('general', 'standard_directory_uuid')
             window['-UUID-'].update(var)
-            var = config.get('general','object_type')
+            var = config.get('general', 'object_type')
             window['-TYPE-'].update(var)
-            var = config.get('general','delay')
+            var = config.get('general', 'delay')
             window['-DELAY-'].update(var)
-            var = config.get('general','quiet_start')
+            var = config.get('general', 'quiet_start')
             window['-QUIET_Start-'].update(var)
-            var = config.get('general','quiet_end')
+            var = config.get('general', 'quiet_end')
             window['-QUIET_End-'].update(var)
-            var = config.get('general','interval')
+            var = config.get('general', 'interval')
             window['-INTERVAL-'].update(var)
-            var = config.get('general','export_location')
+            var = config.get('general', 'export_location')
             window['-UploadStaging-'].update(var)
             print("config file loaded")
             window['-OUTPUT-'].update("\nConfiguration loaded", append=True)
@@ -335,7 +382,7 @@ while True:
                 for filename in filenames:
                     valuables = baseline_valuables
                     valuables['quiet_time'] = quiet_time
-                    if not filename.endswith((".metadata")):
+                    if not filename.endswith(".metadata"):
                         if dirpath != setup:
                             if quiet_time is True:
                                 valuables['quiet_start'] = quiet_start
@@ -360,14 +407,17 @@ while True:
                             if dirpath4 != dirpath3:
                                 print("not a root asset, sending to subfolder")
                                 dirTitle = dirpath3.split("/")[-2]
-                                print("drectory title:", dirTitle)
+                                print("directory title:", dirTitle)
                                 if dirTitle == secondaryTitle:
                                     valuables['parent_uuid'] = secondaryDir
-                                    opexCreator.multi_upload_withXIP(valuables)
+                                    opexCreator.opexCreator.multi_upload_withXIP(valuables)
                                 if dirTitle != secondaryTitle:
                                     print("directory doesn't exist yet, creating it")
                                     headers = login(url, payload)
-                                    data = f'<StructuralObject xmlns="http://preservica.com/XIP/v{version}"><Title>' + dirTitle + '</Title><Description>' + dirTitle + '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + '</Parent></StructuralObject>'
+                                    data = f'<StructuralObject xmlns="http://preservica.com/XIP/v{version}"><Title>' + \
+                                           dirTitle + '</Title><Description>' + dirTitle + \
+                                           '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + \
+                                           '</Parent></StructuralObject>'
                                     response = requests.post(base_url, headers=headers, data=data)
                                     status = response.status_code
                                     print(status)
@@ -388,11 +438,11 @@ while True:
                                     else:
                                         print("no metadata file for the directory")
                                     secondaryTitle = dirTitle
-                                    opexCreator.multi_upload_withXIP(valuables)
+                                    opexCreator.opexCreator.multi_upload_withXIP(valuables)
                             else:
-                                opexCreator.multi_upload_withXIP(valuables)
+                                opexCreator.opexCreator.multi_upload_withXIP(valuables)
                             counter1 += 1
-                            print(counter1,"units uploaded thus far")
+                            print(counter1, "units uploaded thus far")
                             if delay > 0:
                                 opexCreator.opexCreator.countdown(delay)
                             log.write(valuables['asset_title'] + " upload complete" + "\n")
@@ -416,7 +466,7 @@ while True:
                 for filename in filenames:
                     valuables = baseline_valuables
                     valuables['quiet_time'] = quiet_time
-                    if not filename.endswith((".metadata")):
+                    if not filename.endswith(".metadata"):
                         if dirpath != setup:
                             if quiet_time is True:
                                 valuables['quiet_start'] = quiet_start
@@ -443,14 +493,17 @@ while True:
                             if dirpath4 != dirpath3:
                                 print("not a root asset, sending to subfolder")
                                 dirTitle = dirpath3.split("/")[-2]
-                                print("drectory title:", dirTitle)
+                                print("directory title:", dirTitle)
                                 if dirTitle == secondaryTitle:
                                     valuables['parent_uuid'] = secondaryDir
                                     opexCreator_3versions.multi_upload_withXIP(valuables)
                                 if dirTitle != secondaryTitle:
                                     print("directory doesn't exist yet, creating it")
                                     headers = login(url, payload)
-                                    data = f'<StructuralObject xmlns="http://preservica.com/XIP/v{version}"><Title>' + dirTitle + '</Title><Description>' + dirTitle + '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + '</Parent></StructuralObject>'
+                                    data = f'<StructuralObject xmlns="http://preservica.com/XIP/v{version}"><Title>' \
+                                           + dirTitle + '</Title><Description>' + dirTitle + \
+                                           '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + \
+                                           '</Parent></StructuralObject>'
                                     response = requests.post(base_url, headers=headers, data=data)
                                     status = response.status_code
                                     print(status)
@@ -493,16 +546,18 @@ while True:
             dirpath1 = values['-presentation3-']
             dirpathA = values['-presentation2-']
             dirLength = len(dirpath1) + 1
+            window['-OUTPUT-'].update("\nBuilding information for progress bar", append=True)
             for dirpath, dirnames, filenames in os.walk(rooty):
                 for filename in filenames:
                     if filename.endswith(".pdf"):
                         counter2 += 1
+            window['-OUTPUT-'].update("\nProgress information compiled, starting", append=True)
             for dirpath, dirnames, filenames in os.walk(rooty):
                 for filename in filenames:
                     valuables = baseline_valuables
                     valuables['quiet_time'] = quiet_time
                     if dirpath1 in str(dirpath):
-                        if not filename.endswith((".metadata")):
+                        if not filename.endswith(".metadata"):
                             if dirpath != setup:
                                 if quiet_time is True:
                                     valuables['quiet_start'] = quiet_start
@@ -535,14 +590,17 @@ while True:
                                 if dirpath4 != dirpath3:
                                     print("not a root asset, sending to subfolder")
                                     dirTitle = dirpath3.split("/")[-3]
-                                    print("drectory title:", dirTitle)
+                                    print("directory title:", dirTitle)
                                     if dirTitle == secondaryTitle:
                                         valuables['parent_uuid'] = secondaryDir
                                         opexCreator_3versions.multi_upload_withXIP(valuables)
                                     if dirTitle != secondaryTitle:
                                         print("directory doesn't exist yet, creating it")
                                         headers = login(url, payload)
-                                        data = f'<StructuralObject xmlns="http://preservica.com/XIP/v{version}"><Title>' + dirTitle + '</Title><Description>' + dirTitle + '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir + '</Parent></StructuralObject>'
+                                        data = f'<StructuralObject xmlns="http://preservica.com/XIP/v{version}' \
+                                               f'"><Title>' + dirTitle + '</Title><Description>' + dirTitle + \
+                                               '</Description><SecurityTag>open</SecurityTag><Parent>' + standardDir \
+                                               + '</Parent></StructuralObject>'
                                         response = requests.post(base_url, headers=headers, data=data)
                                         status = response.status_code
                                         print(status)
@@ -563,9 +621,11 @@ while True:
                                         else:
                                             print("no metadata file for the directory")
                                         secondaryTitle = dirTitle
-                                        opexCreator_3versions.multi_upload_withXIP(valuables)
+                                        window['-OUTPUT-'].update(
+                                            f"{opexCreator_3versions.multi_upload_withXIP(valuables)}\n", append=True)
                                 else:
-                                    opexCreator_3versions.multi_upload_withXIP(valuables)
+                                    window['-OUTPUT-'].update(
+                                        f"{opexCreator_3versions.multi_upload_withXIP(valuables)}\n", append=True)
                                 counter1 += 1
                                 print(counter1, "units uploaded thus far")
                                 window['-OUTPUT-'].update(f"\n{counter1} of {counter2} uploaded thus far", append=True)
@@ -586,7 +646,7 @@ while True:
             log.close()
             print("all done")
             print(counter1, "successes")
-            window['-OUTPUT-'].update("\nAll Done, okay to close the tool",append=True)
-    if event == "Close" or event == sg.WIN_CLOSED:
+            window['-OUTPUT-'].update("\nAll Done, okay to close the tool", append=True)
+    if event == "Close" or event == Sg.WIN_CLOSED:
         break
 window.close()
