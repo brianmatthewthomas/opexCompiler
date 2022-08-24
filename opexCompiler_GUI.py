@@ -303,10 +303,10 @@ while True:
     if quiet_time is True:
         quiet_start = values['-QUIET_Start-']
         quiet_start = quiet_start.split(":")
-        quiet_start = [int(quiet_start[0]), int(quiet_start[1]), int(quiet_start[2])]
+        quiet_start = [quiet_start[0], quiet_start[1], quiet_start[2]]
         quiet_end = values['-QUIET_End-']
         quiet_end = quiet_end.split(":")
-        quiet_end = [int(quiet_end[0]), int(quiet_end[1]), int(quiet_end[2])]
+        quiet_end = [quiet_end[0], quiet_end[1], quiet_end[2]]
         interval = int(values['-INTERVAL-'])
     staging = values['-UploadStaging-']
     base_url = f"https://{prefix}.preservica.com/api/entity/structural-objects/"

@@ -498,7 +498,7 @@ def uploader(valuables):
                                           Callback=ProgressPercentage(sip_name), Config=transfer_config)
             switch = 3
             current = time.asctime()
-            print("\n", f"upload successful at {current} {response.status_code}")
+            print("\n", f"upload successful at {current}")
             copy = False
         except:
             current = time.asctime()
