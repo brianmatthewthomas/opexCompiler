@@ -590,11 +590,18 @@ def countdown(t):
     mins, secs = divmod(t, 60)
     timer1 = '{:02d}:{:02d}'.format(mins, secs)
     while t:
-        mins, secs = divmod(t, 60)
-        timer = '{:02d}:{:02d}'.format(mins, secs)
-        print("waiting", timer1, " minutes to let the system process upload:", timer, end="\r")
-        time.sleep(1)
-        t -= 1
+        try:
+            mins, secs = divmod(t, 60)
+            timer = '{:02d}:{:02d}'.format(mins, secs)
+            print("waiting", timer1, " minutes to let the system process upload:", timer, end="\r")
+            time.sleep(1)
+            t -= 1
+        except KeyboardInterrupt:
+            print("process paused, cleaning up current round if applicable")
+            time.sleep(10)
+            resume = input("type 'resume' to resume process: ")
+            if resume == "resume":
+                continue
     print("moving to next one")
 
 
@@ -603,8 +610,8 @@ def quiet_time(quiet_start=list, quiet_end=list, interval=int):
     interval = int(interval)
     quiet_start = list(quiet_start)
     quiet_end = list(quiet_end)
-    quiet_1 = now.replace(hour=quiet_start[0], minute=quiet_start[1], second=quiet_start[2])
-    quiet_2 = now.replace(hour=quiet_end[0], minute=quiet_end[1], second=quiet_end[2])
+    quiet_1 = now.replace(hour=int(quiet_start[0]), minute=int(quiet_start[1]), second=int(quiet_start[2]))
+    quiet_2 = now.replace(hour=int(quiet_end[0]), minute=int(quiet_end[1]), second=int(quiet_end[2]))
     while quiet_1 < now < quiet_2:
         print(f"quiet time, waiting until {quiet_2} to resume, sleeping for {interval/60} minutes before checking back")
         time.sleep(interval)

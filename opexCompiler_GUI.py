@@ -86,6 +86,9 @@ layout = [
         Sg.Push()
     ],
     [
+        Sg.HorizontalSeparator(),
+    ],
+    [
         Sg.Push(),
         Sg.Text("upload staging location"),
         Sg.In("", key="-UploadStaging-"),  # Sg.In(size=(50, 1), enable_events=True, key="-UploadStaging-"),
@@ -125,6 +128,9 @@ layout = [
         Sg.Push(),
         Sg.Text("Name of folder holding presentation files", visible=False, key="-presentation3_Text-"),
         Sg.Input("", size=(50, 1), visible=False, key="-presentation3-")
+    ],
+    [
+        Sg.HorizontalSeparator(),
     ],
     [
         Sg.Text("General variables", text_color="orchid1", font=("Calibri", "12", "underline"))
@@ -167,6 +173,9 @@ layout = [
     [
       Sg.Checkbox("Implement Quiet time?", checkbox_color="dark green", key="-QuietTime-",
                   tooltip="uploads from crawlers will pause during specified quiet time")
+    ],
+    [
+        Sg.HorizontalSeparator(),
     ],
     [
         Sg.Text("Upload variables", text_color="orchid1", font=("Calibri", "12", "underline"))
@@ -303,10 +312,10 @@ while True:
     if quiet_time is True:
         quiet_start = values['-QUIET_Start-']
         quiet_start = quiet_start.split(":")
-        quiet_start = [quiet_start[0], quiet_start[1], quiet_start[2]]
+        quiet_start = [int(quiet_start[0]), int(quiet_start[1]), int(quiet_start[2])]
         quiet_end = values['-QUIET_End-']
         quiet_end = quiet_end.split(":")
-        quiet_end = [quiet_end[0], quiet_end[1], quiet_end[2]]
+        quiet_end = [int(quiet_end[0]), int(quiet_end[1]), int(quiet_end[2])]
         interval = int(values['-INTERVAL-'])
     staging = values['-UploadStaging-']
     base_url = f"https://{prefix}.preservica.com/api/entity/structural-objects/"
@@ -375,9 +384,14 @@ while True:
     if event == "Execute":
         if opex_type == "2versions_crawler":
             window['-OUTPUT-'].update("\nprocessing a 2 version opex directory", append=True)
-            dirpath1 = values['-preservation_folder-']
-            dirpath2 = values['-presentation_folder-']
+            dirpath2 = values['-preservation_folder-']
+            dirpath1 = values['-presentation_folder-']
             dirLength = len(dirpath1) + 1
+            window['-OUTPUT-'].update("\nBuilding information for progress bar", append=True)
+            for dirpath, dirnames, filenames in os.walk(dirpath1):
+                for filename in filenames:
+                    if filename.endswith(".pdf"):
+                        counter2 += 1
             for dirpath, dirnames, filenames in os.walk(dirpath1):
                 for filename in filenames:
                     valuables = baseline_valuables
@@ -443,6 +457,8 @@ while True:
                                 opexCreator.opexCreator.multi_upload_withXIP(valuables)
                             counter1 += 1
                             print(counter1, "units uploaded thus far")
+                            window['-OUTPUT-'].update(f"\n{counter1} of {counter2} uploaded thus far", append=True)
+                            window['-Progress-'].update_bar(counter1, counter2)
                             if delay > 0:
                                 opexCreator.opexCreator.countdown(delay)
                             log.write(valuables['asset_title'] + " upload complete" + "\n")
@@ -469,6 +485,19 @@ while True:
                     if not filename.endswith(".metadata"):
                         if dirpath != setup:
                             if quiet_time is True:
+                                if use_config is True and configfile != "":
+                                    # reload configfile on iteration so can change stuff on the fly
+                                    config.read(configfile)
+                                    quiet_start = config.get('general', 'quiet_start')
+                                    quiet_start = quiet_start.split(":")
+                                    quiet_start = [int(quiet_start[0]), int(quiet_start[1]), int(quiet_start[2])]
+                                    quiet_end = config.get('general', 'quiet_end')
+                                    quiet_end = quiet_end.split(":")
+                                    quiet_end = [int(quiet_end[0]), int(quiet_end[1]), int(quiet_end[2])]
+                                    interval = config.get('general', 'interval')
+                                    valuables['quiet_start'] = quiet_start
+                                    valuables['quiet_end'] = quiet_end
+                                    valuables['interval'] = interval
                                 valuables['quiet_start'] = quiet_start
                                 valuables['quiet_end'] = quiet_end
                                 valuables['interval'] = interval
@@ -560,6 +589,19 @@ while True:
                         if not filename.endswith(".metadata"):
                             if dirpath != setup:
                                 if quiet_time is True:
+                                    if use_config is True and configfile != "":
+                                        # reload configfile on iteration so can change stuff on the fly
+                                        config.read(configfile)
+                                        quiet_start = config.get('general', 'quiet_start')
+                                        quiet_start = quiet_start.split(":")
+                                        quiet_start = [int(quiet_start[0]), int(quiet_start[1]), int(quiet_start[2])]
+                                        quiet_end = config.get('general', 'quiet_end')
+                                        quiet_end = quiet_end.split(":")
+                                        quiet_end = [int(quiet_end[0]), int(quiet_end[1]), int(quiet_end[2])]
+                                        interval = config.get('general', 'interval')
+                                        valuables['quiet_start'] = quiet_start
+                                        valuables['quiet_end'] = quiet_end
+                                        valuables['interval'] = interval
                                     valuables['quiet_start'] = quiet_start
                                     valuables['quiet_end'] = quiet_end
                                     valuables['interval'] = interval

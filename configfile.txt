@@ -2,17 +2,17 @@
 #NOTE: you will need to enter the config file relative filepath when accessing it.
 [general]
 preservica_version = 6.5
-standard_directory_uuid = b971f1cd-79ef-4242-b200-605a3a642746
+standard_directory_uuid = 576e14cc-c908-42f5-b392-7f8e7b75c4e9
 suffix_count = 3
 object_type = multi-page document
 delay = 120
 quiet_start =
 quiet_end =
 interval =
-export_location = /media/sf_Z_DRIVE/Working/Ancestry/export
+export_location = /media/sf_Y_DRIVE/DigitizationTransferFolder/export
 [2_version_crawler]
-preservation_folder = ../2-wayStaging/preservica_preservation1_lnk
-presentation_folder = ../2-wayStaging/preservica_presentation2_lnk
+preservation_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_preservation1_lnk
+presentation_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_presentation2_lnk
 [3_version_crawler]
 preservation_folder = ../1976085/preservica_preservation1_lnk
 intermediary_folder = ../1976085/preservica_presentation2_lnk
