@@ -2,14 +2,14 @@
 #NOTE: you will need to enter the config file relative filepath when accessing it.
 [general]
 preservica_version = 6.5
-standard_directory_uuid = 576e14cc-c908-42f5-b392-7f8e7b75c4e9
+standard_directory_uuid = cad0972a-f69a-433c-a982-93f66f152afb
 suffix_count = 3
 object_type = multi-page document
-delay = 120
-quiet_start =
-quiet_end =
-interval =
-export_location = /media/sf_Y_DRIVE/DigitizationTransferFolder/export
+delay = 150
+quiet_start = 08:00:00
+quiet_end = 17:00:01
+interval = 450
+export_location = /media/sf_Y_DRIVE/DigitizationTransferFolder/export2
 [2_version_crawler]
 preservation_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_preservation1_lnk
 presentation_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_presentation2_lnk
@@ -18,7 +18,7 @@ preservation_folder = ../1976085/preservica_preservation1_lnk
 intermediary_folder = ../1976085/preservica_presentation2_lnk
 presentation_folder = ../1976085/preservica_presentation3_lnk
 [3_version_crawler_tree]
-root_folder = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_1677/staging/not_done/rejected/I
+root_folder = /media/sf_Z_DRIVE/Working/Ancestry/segmented/ready/good_2220/processed/bonds/Angel, T F - Atkinson, G A
 preservation_folder = preservation1
 intermediary_folder = presentation2
 presentation_folder = presentation3

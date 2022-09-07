@@ -9,12 +9,20 @@ import opexCreator.opexCreator
 from opexCreator import opexCreator_3versions
 
 
+
 def login(login_url, login_payload):
     auth = requests.post(login_url, data=login_payload).json()
     session_token = auth['token']
     login_headers = {'Preservica-Access-Token': session_token, 'Content-Type': 'application/xml',
                      'Accept-Charset': 'UTF-8'}
     return login_headers
+
+def finished():
+    from pydub import AudioSegment
+    from pydub.playback import play
+    myAudio = os.path.abspath(opexCreator.__file__).replace("__init__.py","transferofdatacomplete.wav")
+    sound = AudioSegment.from_file(myAudio, type="wav")
+    play(sound)
 
 
 # set some variables as a sacrifice to the best practices gods
@@ -175,6 +183,10 @@ layout = [
                   tooltip="uploads from crawlers will pause during specified quiet time")
     ],
     [
+        Sg.Checkbox("Play sound when complete?", checkbox_color="dark green", key="-NOTIFICATION-",
+                    tooltip="will play audio notification when full upload run is complete, for passive monitoring")
+    ],
+    [
         Sg.HorizontalSeparator(),
     ],
     [
@@ -242,6 +254,7 @@ while True:
     event, values = window.read()
     use_config = values["-CONFIG-"]
     configfile = values['-CONFIGFILE-']
+    notification = values['-NOTIFICATION-']
     if values['-TYPE_2v-'] is True:
         opex_type = "2versions_crawler"
         window['-ROOT_Text-'].update(visible=False)
@@ -686,6 +699,8 @@ while True:
                 except:
                     print("unable to remove ./transfer_agent_list.txt, please delete manually")
             log.close()
+            if notification is True:
+                finished()
             print("all done")
             print(counter1, "successes")
             window['-OUTPUT-'].update("\nAll Done, okay to close the tool", append=True)
