@@ -17,10 +17,9 @@ def login(login_url, login_payload):
                      'Accept-Charset': 'UTF-8'}
     return login_headers
 
-def finished():
+def finished(myAudio):
     from pydub import AudioSegment
     from pydub.playback import play
-    myAudio = os.path.abspath(opexCreator.__file__).replace("__init__.py","transferofdatacomplete.wav")
     sound = AudioSegment.from_file(myAudio, type="wav")
     play(sound)
 
@@ -69,7 +68,8 @@ my_icon = b'iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAMAAAAOusbgAAAABGdBTUEAALGPC/xhBQAA
           b'P8lSEaB/kGw1IFvTdQ2aNhw0dDSiRxUkh8QSNC7AsaM1KS0cupV9hu7SiXdJFY9ZdwLGNh4X9Jeoohe7jnYgWo6XeP/N0znKsvKbzu' \
           b'GMrGjcbxMkO69EDuc/kH6DhA657cRLAAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjItMDMtMThUMTA6MDk6NDkrMDA6MDAF5/xCAAAAJX' \
           b'RFWHRkYXRlOm1vZGlmeQAyMDIyLTAzLTE4VDEwOjA5OjQ5KzAwOjAwdLpE/gAAAABJRU5ErkJggg=='
-
+# config file template
+config_template = '''#NOTE: folders need to be relative to where you start the program or absolute! NOT NOT NOT based on where this config file lives\n#NOTE: you will need to enter the config file relative filepath when accessing it.\n[general]\npreservica_version = \nstandard_directory_uuid = \nsuffix_count = 3\nobject_type = multi-page document\ndelay = 300\nquiet_start = 08:00:00\nquiet_end = 08:00:01\ninterval = 300\nsound = \nexport_location = \n[2_version_crawler]\npreservation_folder = \npresentation_folder = \n[3_version_crawler]\npreservation_folder = \nintermediary_folder = \npresentation_folder = \n[3_version_crawler_tree]\nroot_folder = \npreservation_folder = preservation1\nintermediary_folder = presentation2\npresentation_folder = presentation3'''
 Sg.theme('DarkGreen5')
 layout = [
     [
@@ -79,8 +79,11 @@ layout = [
         Sg.Button("Push to Update")
     ],
     [
-      Sg.Checkbox("Use config file?", checkbox_color="dark green", key="-CONFIG-",
-                  tooltip="to pre-populate the necessary fields", enable_events=True)
+        Sg.Checkbox("Use config file?", checkbox_color="dark green", key="-CONFIG-",
+            tooltip="to pre-populate the necessary fields", enable_events=True),
+        Sg.Push(),
+        Sg.Text("Generate config file template?"),
+        Sg.Button("Generate",tooltip="Click to generate a blank configfile you can fill in")
     ],
     [
         Sg.Push(),
@@ -185,6 +188,12 @@ layout = [
     [
         Sg.Checkbox("Play sound when complete?", checkbox_color="dark green", key="-NOTIFICATION-",
                     tooltip="will play audio notification when full upload run is complete, for passive monitoring")
+    ],
+    [
+        Sg.Push(),
+        Sg.Text("wav file to play", visible=False, key="-SOUND_Text-"),
+        Sg.Input("", size=(50, 1), visible=False, key="-SOUND-"),
+        Sg.FileBrowse(file_types=(("wav files only", "*.wav"),), visible=False, key="-SOUND_Browse-")
     ],
     [
         Sg.HorizontalSeparator(),
@@ -303,6 +312,10 @@ while True:
         window['-intermediary_folder-'].update(visible=False)
         window['-presentation_folder_Text-'].update(visible=False)
         window['-presentation_folder-'].update(visible=False)
+    if values['-NOTIFICATION-'] is True:
+        window['-SOUND_Text-'].update(visible=True)
+        window['-SOUND-'].update(visible=True)
+        window['-SOUND_Browse-'].update(visible=True)
     username = values['-USERNAME-']
     password = values['-PASSWORD-']
     tenancy = values['-TENANCY-']
@@ -351,6 +364,14 @@ while True:
     counter1 = 0
     counter2 = 0
     setup = ""
+    if event == "Generate":
+        if not os.path.isfile("configfile.txt"):
+            with open("configfile.txt", "w") as w:
+                w.write(config_template)
+            w.close()
+            window['-OUTPUT-'].update("\nconfigfile.txt generated", append=True)
+        else:
+            window['-OUTPUT-'].update("\nconfigfile.txt already exists", append=True)
     if event == "Load":
         if use_config is True and configfile != "":
             config = configparser.ConfigParser()
@@ -392,6 +413,8 @@ while True:
             window['-INTERVAL-'].update(var)
             var = config.get('general', 'export_location')
             window['-UploadStaging-'].update(var)
+            var = config.get('general','sound')
+            window['-SOUND-'].update(var)
             print("config file loaded")
             window['-OUTPUT-'].update("\nConfiguration loaded", append=True)
     if event == "Execute":
@@ -699,11 +722,11 @@ while True:
                 except:
                     print("unable to remove ./transfer_agent_list.txt, please delete manually")
             log.close()
-            if notification is True:
-                finished()
             print("all done")
             print(counter1, "successes")
             window['-OUTPUT-'].update("\nAll Done, okay to close the tool", append=True)
+        if notification is True:
+            finished(values['-SOUND-'])
     if event == "Close" or event == Sg.WIN_CLOSED:
         break
 window.close()
