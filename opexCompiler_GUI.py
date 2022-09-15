@@ -4,6 +4,8 @@ import os
 import PySimpleGUI as Sg
 import lxml.etree as ET
 import requests
+from pydub import AudioSegment
+from pydub.playback import play
 
 import opexCreator.opexCreator
 from opexCreator import opexCreator_3versions
@@ -18,8 +20,6 @@ def login(login_url, login_payload):
     return login_headers
 
 def finished(myAudio):
-    from pydub import AudioSegment
-    from pydub.playback import play
     sound = AudioSegment.from_file(myAudio, type="wav")
     play(sound)
 
