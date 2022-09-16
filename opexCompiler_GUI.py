@@ -71,8 +71,7 @@ my_icon = b'iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAMAAAAOusbgAAAABGdBTUEAALGPC/xhBQAA
 # config file template
 config_template = '''#NOTE: folders need to be relative to where you start the program or absolute! NOT NOT NOT based on where this config file lives\n#NOTE: you will need to enter the config file relative filepath when accessing it.\n[general]\npreservica_version = \nstandard_directory_uuid = \nsuffix_count = 3\nobject_type = multi-page document\ndelay = 300\nquiet_start = 08:00:00\nquiet_end = 08:00:01\ninterval = 300\nsound = \nexport_location = \n[2_version_crawler]\npreservation_folder = \npresentation_folder = \n[3_version_crawler]\npreservation_folder = \nintermediary_folder = \npresentation_folder = \n[3_version_crawler_tree]\nroot_folder = \npreservation_folder = preservation1\nintermediary_folder = presentation2\npresentation_folder = presentation3'''
 Sg.theme('DarkGreen5')
-layout = [
-    [
+left_layout = [[
         Sg.Radio("2-version crawler", "radio1", default=False, key="-TYPE_2v-"),
         Sg.Radio("3-version crawler", "radio1", default=False, key="-TYPE_3v-"),
         Sg.Radio("3-version crawler tree", "radio1", default=False, key="-TYPE_3v-tree-"),
@@ -142,7 +141,9 @@ layout = [
     ],
     [
         Sg.HorizontalSeparator(),
-    ],
+    ],]
+right_layout = [
+
     [
         Sg.Text("General variables", text_color="orchid1", font=("Calibri", "12", "underline"))
     ],
@@ -220,6 +221,13 @@ layout = [
         Sg.Push(),
         Sg.Text("Tenancy abbreviation:", key="-TENANCY_TEXT-"),
         Sg.Input("", size=(50, 1), key="-TENANCY-")
+    ],]
+bottom_layout = [
+
+]
+layout = [
+    [
+      Sg.Pane([Sg.Column(left_layout),Sg.Column(right_layout)], orientation='h', expand_x=True, expand_y=True)
     ],
     [
         Sg.Text("Select execute to start processing")
