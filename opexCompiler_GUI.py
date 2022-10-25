@@ -221,7 +221,11 @@ right_layout = [
         Sg.Push(),
         Sg.Text("Tenancy abbreviation:", key="-TENANCY_TEXT-"),
         Sg.Input("", size=(50, 1), key="-TENANCY-")
-    ],]
+    ],
+    [
+        Sg.Text("")
+    ],
+]
 bottom_layout = [
 
 ]
