@@ -2,10 +2,10 @@
 #NOTE: you will need to enter the config file relative filepath when accessing it.
 [general]
 preservica_version = 6.5
-standard_directory_uuid = c1ff0881-a54a-4c10-a722-ebc118306c12
+standard_directory_uuid = 8652df18-eb26-4312-8dc3-682fa7270cbb
 suffix_count = 3
 object_type = multi-page document
-delay = 150
+delay = 60
 quiet_start = 08:00:00
 quiet_end = 17:00:01
 interval = 450
@@ -20,7 +20,7 @@ preservation_folder = ../1976085/preservica_preservation1_lnk
 intermediary_folder = ../1976085/preservica_presentation2_lnk
 presentation_folder = ../1976085/preservica_presentation3_lnk
 [3_version_crawler_tree]
-root_folder = /media/sf_G_DRIVE/FamilySearch/sorted/Galveston county/Justice of the Peace/Inquest records
+root_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/BoardOfControl
 preservation_folder = preservation1
 intermediary_folder = presentation2
 presentation_folder = presentation3

@@ -75,8 +75,7 @@ def multi_upload_withXIP(valuables):
         export_dir = valuables['export_directory']
         try:
             to_delete = []
-            current = time.asctime()
-            print(f'starting multi-part upload process at {current}')
+            print(f'starting multi-part upload process at {time.asctime()}')
             # unpack the dictionary to individual variables
             access1_directory = valuables['access1_directory']
             access2_directory = valuables['access2_directory']
@@ -190,6 +189,7 @@ def multi_upload_withXIP(valuables):
                             print("error in copying of", filename, "... exiting, try again")
                             sys.exit()
             # start creating the representations, content objects and bitstreams
+            print(f"starting to compile pax metadata as of {time.asctime()}")
             access1_refs_dict = {}
             if access1_representation:
                 access1_refs_dict = make_representation(xip, "Access1", "Access", access1_directory,
@@ -202,18 +202,21 @@ def multi_upload_withXIP(valuables):
             if preservation_representation:
                 preservation_refs_dict = make_representation(xip, "Preservation", "Preservation",
                                                              preservation_directory, asset_id, valuables)
+            print(f"representations created as of {time.asctime()}")
             if access1_refs_dict:
                 make_content_objects(xip, access1_refs_dict, asset_id, asset_tag, "", "")
             if access2_refs_dict:
                 make_content_objects(xip, access2_refs_dict, asset_id, asset_tag, "", "")
             if preservation_refs_dict:
                 make_content_objects(xip, preservation_refs_dict, asset_id, asset_tag, "", "")
+            print(f"content objects created as of {time.asctime()}")
             if access1_refs_dict:
                 make_generation(xip, access1_refs_dict, "Access_1")
             if access2_refs_dict:
                 make_generation(xip, access2_refs_dict, "Access_2")
             if preservation_refs_dict:
                 make_generation(xip, preservation_refs_dict, "Preservation")
+            print(f"generations created as of {time.asctime()}")
             if access1_refs_dict:
                 make_bitstream(xip, access1_refs_dict, access1_directory, "Access_1", access1_representation)
             if access2_refs_dict:
@@ -221,6 +224,7 @@ def multi_upload_withXIP(valuables):
             if preservation_representation:
                 make_bitstream(xip, preservation_refs_dict, preservation_directory, "Preservation1",
                                preservation_representation)
+            print(f"bitstreams created as of {time.asctime()}")
             pax_folder = export_dir + "/" + asset_title
             # currently unable to get xip to work with preservica ingest, uncomment the 4 lines below
             # if/when it starts working
@@ -231,16 +235,15 @@ def multi_upload_withXIP(valuables):
             tempy = export_dir + "/temp"
             os.makedirs(tempy, exist_ok=True)
             archive_name = export_dir + "/" + asset_title + ".pax"
-            current = time.asctime()
-            print(f'making preliminary pax file as of {current}')
+            print(f'making preliminary pax file as of {time.asctime()}')
             shutil.make_archive(archive_name, "zip", pax_folder)
             archive_name = archive_name + ".zip"
             archive_name2 = archive_name.replace(export_dir, tempy)
             shutil.move(archive_name, archive_name2)
+            print(f"making opex file as of {time.asctime()}")
             make_opex(valuables, archive_name2)
             compiled_opex = export_dir + "/" + asset_id
-            current = time.asctime()
-            print(f'making opex file as of {current}')
+            print(f'making opex archive as of {time.asctime()}')
             shutil.make_archive(compiled_opex, "zip", tempy)
             compiled_opex = compiled_opex + ".zip"
             valuables['compiled_opex'] = compiled_opex
@@ -373,16 +376,14 @@ def multi_upload(valuables):
             tempy = export_dir + "/temp"
             os.makedirs(tempy, exist_ok=True)
             archive_name = export_dir + "/" + asset_title + ".pax"
-            current = time.asctime()
-            print(f'making preliminary pax file as of {current}')
+            print(f'making preliminary pax file as of {time.asctime()}')
             shutil.make_archive(archive_name, "zip", pax_folder)
             archive_name = archive_name + ".zip"
             archive_name2 = archive_name.replace(export_dir, tempy)
             shutil.move(archive_name, archive_name2)
             make_opex(valuables, archive_name2)
             compiled_opex = export_dir + "/" + asset_id
-            current = time.asctime()
-            print(f'making opex file as of {current}')
+            print(f'making opex file as of {time.asctime()}')
             shutil.make_archive(compiled_opex, "zip", tempy)
             compiled_opex = compiled_opex + ".zip"
             valuables['compiled_opex'] = compiled_opex
@@ -480,12 +481,11 @@ def uploader(valuables):
             filelist.append(line)
     token = new_token(valuables['username'], valuables['password'], valuables['tenant'], valuables['prefix'])
     print(token)
-    current = time.asctime()
     user_tenant = valuables['tenant']
     user_domain = valuables['prefix']
     bucket = f'{user_tenant.lower()}.package.upload'
     endpoint = f'https://{user_domain}.preservica.com/api/s3/buckets'
-    print(f'Uploading to Preservica: using s3 bucket {bucket} at {current}')
+    print(f'Uploading to Preservica: using s3 bucket {bucket} at {time.asctime()}')
     client = boto3.client('s3', endpoint_url=endpoint, aws_access_key_id=token, aws_secret_access_key="NOT USED",
                           config=Config(s3={'addressing_style': 'path'}))
     sip_name = valuables['compiled_opex']
