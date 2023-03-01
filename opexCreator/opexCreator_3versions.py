@@ -93,7 +93,7 @@ def multi_upload_withXIP(valuables):
                 asset_description = valuables['asset_title']
             # initiate creating xml file
             xip = Element('XIP')
-            xip.set('xmlns', 'http://preservica.com/XIP/v6.4')
+            xip.set('xmlns', 'http://preservica.com/XIP/v6.6')
             io = SubElement(xip, 'InformationObject')
             ref = SubElement(io, 'Ref')
             ref.text = str(uuid.uuid4())
@@ -228,10 +228,10 @@ def multi_upload_withXIP(valuables):
             pax_folder = export_dir + "/" + asset_title
             # currently unable to get xip to work with preservica ingest, uncomment the 4 lines below
             # if/when it starts working
-            pax_file = pax_folder + "/" + asset_title + ".xip"
-            metadata = open(pax_file, "wt", encoding='utf-8')
-            metadata.write(prettify(xip))
-            metadata.close()
+            #pax_file = pax_folder + "/" + asset_title + ".xip"
+            #metadata = open(pax_file, "wt", encoding='utf-8')
+            #metadata.write(prettify(xip))
+            #metadata.close()
             tempy = export_dir + "/temp"
             os.makedirs(tempy, exist_ok=True)
             archive_name = export_dir + "/" + asset_title + ".pax"

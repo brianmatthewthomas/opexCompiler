@@ -1,8 +1,8 @@
 #NOTE: folders need to be relative to where you start the program or absolute! NOT NOT NOT based on where this config file lives
 #NOTE: you will need to enter the config file relative filepath when accessing it.
 [general]
-preservica_version = 6.5
-standard_directory_uuid = 8652df18-eb26-4312-8dc3-682fa7270cbb
+preservica_version = 6.6
+standard_directory_uuid = 4a27b07b-f67b-473e-b93e-651d27159580
 suffix_count = 3
 object_type = multi-page document
 delay = 60
@@ -20,7 +20,7 @@ preservation_folder = ../1976085/preservica_preservation1_lnk
 intermediary_folder = ../1976085/preservica_presentation2_lnk
 presentation_folder = ../1976085/preservica_presentation3_lnk
 [3_version_crawler_tree]
-root_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/BoardOfControl
+root_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/Headquarters4
 preservation_folder = preservation1
 intermediary_folder = presentation2
 presentation_folder = presentation3
