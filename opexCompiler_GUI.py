@@ -704,7 +704,9 @@ while True:
                                         valuables['parent_uuid'] = purl
                                         posty = dom.find(".//EntityResponse:Self", namespaces=namespaces).text
                                         posty = posty + "/metadata"
-                                        dirMD = dirpath[:-math] + "/" + dirTitle + ".metadata"
+                                        dirMD_math = math + len(dirpath2)
+                                        dirMD = dirpath[:-dirMD_math] + "/" + dirTitle + ".metadata"
+                                        print(dirMD)
                                         if os.path.isfile(dirMD):
                                             response = requests.post(posty, headers=headers, data=open(dirMD, 'rb'))
                                             print("adding metadata to the directory")
