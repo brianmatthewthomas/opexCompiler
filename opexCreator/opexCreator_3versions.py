@@ -93,7 +93,7 @@ def multi_upload_withXIP(valuables):
                 asset_description = valuables['asset_title']
             # initiate creating xml file
             xip = Element('XIP')
-            xip.set('xmlns', 'http://preservica.com/XIP/v6.6')
+            xip.set('xmlns', 'http://preservica.com/XIP/v6.7')
             io = SubElement(xip, 'InformationObject')
             ref = SubElement(io, 'Ref')
             ref.text = str(uuid.uuid4())
@@ -496,11 +496,13 @@ def uploader(valuables):
         try:
             response = client.upload_file(sip_name, bucket, valuables['asset_id'] + ".zip", ExtraArgs=metadata,
                                           Callback=ProgressPercentage(sip_name), Config=transfer_config)
+            print(response)
             switch = 3
             current = time.asctime()
             print("\n", f"upload successful at {current}")
             copy = False
         except:
+            print(response)
             current = time.asctime()
             print(f"upload failure, trying again at {current}")
             switch += 1

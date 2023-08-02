@@ -1,18 +1,26 @@
 #NOTE: folders need to be relative to where you start the program or absolute! NOT NOT NOT based on where this config file lives
 #NOTE: you will need to enter the config file relative filepath when accessing it.
 [general]
-preservica_version = 6.6
-standard_directory_uuid = 75f02ffb-5401-4fc8-b9a6-35db6ff0a40a
+preservica_version = 6.7
+standard_directory_uuid = 176e5d99-d952-48e7-a94a-0f19d871085f
 suffix_count = 3
 object_type = multi-page document
 delay = 60
 quiet_start = 08:00:00
 quiet_end = 17:00:01
 interval = 60
-export_location = /media/sf_Y_DRIVE/DigitizationTransferFolder/export2
+export_location = /media/sf_Z_DRIVE/export2
 transfer_agent =
 sound = /media/sf_Documents/tng-computer-transfercomplete.wav
+default_metadata = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_2115/sorted2/C/Cass/rhrd-cass-countyClerk-probateMinutes.xml
+[1_version_flat]
+root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/Index to Probate Minutes
+[2_version_flat]
+root_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_preservation1
+preservation_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_preservation1_lnk
+presentation_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_presentation2_lnk
 [2_version_crawler]
+root_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/
 preservation_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_preservation1_lnk
 presentation_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_presentation2_lnk
 [3_version_crawler]
@@ -20,7 +28,7 @@ preservation_folder = ../1976085/preservica_preservation1_lnk
 intermediary_folder = ../1976085/preservica_presentation2_lnk
 presentation_folder = ../1976085/preservica_presentation3_lnk
 [3_version_crawler_tree]
-root_folder = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_2218/records/aj_houston
+root_folder = /media/sf_Y_DRIVE/FamilySearch/unsorted/M942-QPV_0001/Bexar County
 preservation_folder = preservation1
 intermediary_folder = presentation2
 presentation_folder = presentation3
