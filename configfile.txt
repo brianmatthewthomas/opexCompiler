@@ -10,25 +10,27 @@ quiet_start = 08:00:00
 quiet_end = 17:00:01
 interval = 60
 export_location = /media/sf_Z_DRIVE/export2
+pax_staging = /media/sf_Z_DRIVE/temp
 transfer_agent =
 sound = /media/sf_Documents/tng-computer-transfercomplete.wav
 default_metadata = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_2115/sorted2/C/Cass/rhrd-cass-countyClerk-probateMinutes.xml
 [1_version_flat]
-root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/Index to Probate Minutes
+root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/Index to Probate Minutes_flat
 [2_version_flat]
-root_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_preservation1
-preservation_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_preservation1_lnk
-presentation_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_presentation2_lnk
+root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/Index to Probate Minutes_flat
+preservation_folder = preservica_preservation1_lnk
+presentation_folder = preservica_presentation2_lnk
 [2_version_crawler]
-root_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/
-preservation_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_preservation1_lnk
-presentation_folder = /media/sf_Y_DRIVE/DigitizationTransferFolder/SCOTX/2022-08/preservica_presentation2_lnk
+root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/film_test
+preservation_folder = preservation1
+presentation_folder = presentation2
 [3_version_crawler]
-preservation_folder = ../1976085/preservica_preservation1_lnk
-intermediary_folder = ../1976085/preservica_presentation2_lnk
-presentation_folder = ../1976085/preservica_presentation3_lnk
+root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/home
+preservation_folder = preservation1
+intermediary_folder = presentation2
+presentation_folder = presentation3
 [3_version_crawler_tree]
-root_folder = /media/sf_Y_DRIVE/FamilySearch/unsorted/M942-QPV_0001/Bexar County
+root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/home
 preservation_folder = preservation1
 intermediary_folder = presentation2
 presentation_folder = presentation3

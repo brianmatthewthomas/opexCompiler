@@ -39,11 +39,24 @@ def create_sha256(filename):
     fixity = sha256.hexdigest()
     return fixity
 
+def film_check(my_target_dir, filename):
+    if filename.split(".")[-1] == "srt":
+        filename2 = f"{my_target_dir}/English/{filename}"
+    elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
+        filename2 = f"{my_target_dir}/English/{filename}"
+    elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
+        filename2 = f"{my_target_dir}/Spanish/{filename}"
+    elif filename.endswith(tuple(['mp4', 'm4v', 'mov'])):
+        filename2 = f"{my_target_dir}/Movie/{filename}"
+    else:
+        filename2 = f"{my_target_dir}/{filename.split('.')[0]}/{filename}"
+    return filename2
+
 def make_opex(valuables, filename2):
     opex = Element('opex:OPEXMetadata', {'xmlns:opex': 'http://www.openpreservationexchange.org/opex/v1.1'})
     opex_transfer = SubElement(opex, 'opex:Transfer')
-    opex_source = SubElement(opex_transfer, "opex:SourceID")
-    opex_source.text = valuables['asset_id']
+    #opex_source = SubElement(opex_transfer, "opex:SourceID")
+    #opex_source.text = valuables['asset_id']
     opex_fixities = SubElement(opex_transfer, "opex:Fixities")
     opex_sha256 = create_sha256(filename2)
     opex_fixity = SubElement(opex_fixities, 'opex:Fixity')
@@ -68,16 +81,17 @@ def make_opex(valuables, filename2):
             with open(valuables['metadata_file'], "r") as r:
                 filedata = r.read()
                 filedata = filedata.replace('<?xml version="1.0" encoding="UTF-8"?>', '')
+                filedata = filedata.replace('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', '')
                 with open(export_file, "r") as r:
                     fileinfo = r.read()
                     fileinfo = fileinfo.replace("This is where the metadata goes", filedata)
                     with open(export_file, "w") as w:
                         w.write(fileinfo)
                     w.close()
+    window['-OUTPUT-'].update(f"\nopex file for {filename2.split('/')[-1]} generated", append=True)
 
 def make_folder_opex(source_dir, export_dir, package_UUID, metadata):
     for dirpath, dirnames, filenames in os.walk(f"{export_dir}/{package_UUID}"):
-        print(dirpath)
         target_metadata = dirpath.replace(f"{dirpath}/{package_UUID}", source_dir)
         target_metadata = f"{target_metadata}.metadata"
         metadata = metadata
@@ -85,11 +99,11 @@ def make_folder_opex(source_dir, export_dir, package_UUID, metadata):
             metadata = target_metadata
         opex = Element('opex:OPEXMetadata', {'xmlns:opex': 'http://www.openpreservationexchange.org/opex/v1.1'})
         opex_transfer = SubElement(opex, 'opex:Transfer')
-        opex_source = SubElement(opex_transfer, "opex:SourceID")
-        opex_source.text = dirpath.split("/")[-1]
+        #opex_source = SubElement(opex_transfer, "opex:SourceID")
+        #opex_source.text = dirpath.split("/")[-1]
         opex_manifest = SubElement(opex_transfer, "opex:Manifest")
         files = [q for q in os.listdir(dirpath) if os.path.isfile(f"{dirpath}/{q}")]
-        print(files)
+        window['-OUTPUT-'].update(f"\nlist of files in {dirpath}: {files}", append=True)
         files.sort()
         if files != []:
             opex_files = SubElement(opex_manifest, 'opex:Files')
@@ -101,7 +115,7 @@ def make_folder_opex(source_dir, export_dir, package_UUID, metadata):
                 else:
                     opex_file.attrib = {'type': 'content'}
         directories = [q for q in os.listdir(dirpath) if os.path.isdir(f"{dirpath}/{q}")]
-        print(directories)
+        window['-OUTPUT-'].update(f"\nlist of directories in {dirpath}: {directories}", append=True)
         directories.sort()
         if directories != []:
             opex_directories = SubElement(opex_manifest, 'opex:Folders')
@@ -126,12 +140,14 @@ def make_folder_opex(source_dir, export_dir, package_UUID, metadata):
             with open(metadata, "r") as r:
                 filedata = r.read()
                 filedata = filedata.replace('<?xml version="1.0" encoding="UTF-8"?>', '')
+                filedata = filedata.replace('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', '')
                 with open(export_file, "r") as r:
                     fileinfo = r.read()
                     fileinfo = fileinfo.replace("This is where the metadata goes", filedata)
                     with open(export_file, "w") as w:
                         w.write(fileinfo)
                     w.close()
+    window['-OUTPUT-'].update("\nFolder inventories generated", append=True)
 
 def prettify(elem):
     rough_string = ElementTree.tostring(elem, 'utf-8')
@@ -218,6 +234,9 @@ left_layout = [[
     [
         Sg.Text("")
     ],
+    [
+        Sg.Text("")
+    ],
 ]
 right_layout = [
     [
@@ -257,6 +276,11 @@ right_layout = [
     ],
     [
         Sg.HorizontalSeparator()
+    ],
+    [
+        Sg.Push(),
+        Sg.Text(text="pax staging area", visible=False, key="-temp_staging_text-"),
+        Sg.Input(default_text="", size=(50, 1), visible=False, key="-temp_staging-")
     ],
     [
         Sg.Push(),
@@ -353,6 +377,8 @@ while True:
         opex_type = "1versions_flat"
         window['-ROOT_Text-'].update(visible=True)
         window['-ROOT-'].update(visible=True)
+        window['-temp_staging_text-'].update(visible=False)
+        window['-temp_staging-'].update(visible=False)
         window['-3vTree_preservation1_Text-'].update(visible=False)
         window['-3vTree_preservation1-'].update(visible=False)
         window['-3vTree_presentation2_Text-'].update(visible=False)
@@ -371,6 +397,8 @@ while True:
         opex_type = "2versions_flat"
         window['-ROOT_Text-'].update(visible=True)
         window['-ROOT-'].update(visible=True)
+        window['-temp_staging_text-'].update(visible=True)
+        window['-temp_staging-'].update(visible=True)
         window['-1vFlat_preservation_Text-'].update(visible=False)
         window['-1vFlat_preservation-'].update(visible=False)
         window['-3vTree_preservation1_Text-'].update(visible=False)
@@ -391,6 +419,8 @@ while True:
         opex_type = "2versions_crawler"
         window['-ROOT_Text-'].update(visible=True)
         window['-ROOT-'].update(visible=True)
+        window['-temp_staging_text-'].update(visible=True)
+        window['-temp_staging-'].update(visible=True)
         window['-1vFlat_preservation_Text-'].update(visible=False)
         window['-1vFlat_preservation-'].update(visible=False)
         window['-3vTree_preservation1_Text-'].update(visible=False)
@@ -411,6 +441,8 @@ while True:
         opex_type = "3versions_crawler_tree"
         window['-ROOT_Text-'].update(visible=True)
         window['-ROOT-'].update(visible=True)
+        window['-temp_staging_text-'].update(visible=True)
+        window['-temp_staging-'].update(visible=True)
         window['-1vFlat_preservation_Text-'].update(visible=False)
         window['-1vFlat_preservation-'].update(visible=False)
         window['-3vTree_preservation1_Text-'].update(visible=True)
@@ -473,6 +505,8 @@ while True:
             if opex_type == "2versions_flat":
                 var = config.get('2_version_flat', 'root_folder')
                 window['-ROOT-'].update(var)
+                var = config.get("general", "pax_staging")
+                window['-temp_staging-'].update(var)
                 var = config.get('2_version_flat', 'preservation_folder')
                 window['-2vFlat_preservation-'].update(var)
                 var = config.get('2_version_flat', 'presentation_folder')
@@ -481,6 +515,8 @@ while True:
             if opex_type == "2versions_crawler":
                 var = config.get('2_version_crawler', 'root_folder')
                 window['-ROOT-'].update(var)
+                var = config.get("general", "pax_staging")
+                window['-temp_staging-'].update(var)
                 var = config.get('2_version_crawler', 'preservation_folder')
                 window['-2vTree_preservation-'].update(var)
                 var = config.get('2_version_crawler', 'presentation_folder')
@@ -489,11 +525,13 @@ while True:
             if opex_type == "3versions_crawler_tree":
                 var = config.get('3_version_crawler_tree', 'root_folder')
                 window['-ROOT-'].update(var)
-                var = config.get('3_version_crawler_tree', 'presentation_folder')
+                var = config.get("general", "pax_staging")
+                window['-temp_staging-'].update(var)
+                var = config.get('3_version_crawler_tree', 'preservation_folder')
                 window['-3vTree_preservation1-'].update(var)
                 var = config.get('3_version_crawler_tree', 'intermediary_folder')
                 window['-3vTree_presentation2-'].update(var)
-                var = config.get('3_version_crawler_tree', 'preservation_folder')
+                var = config.get('3_version_crawler_tree', 'presentation_folder')
                 window['-3vTree_presentation3-'].update(var)
                 print("something even more")
             var = config.get('general', 'default_metadata')
@@ -541,16 +579,296 @@ while True:
                             print(f"something went wrong with processing {filename}")
                             sys.exit()
                         else:
-                            print(f"{filename} verified")
+                            window['-OUTPUT-'].update(f"\n{filename} verified", append=True)
                         make_opex(valuables, filename2)
             make_folder_opex(walker, export_dir, package_name, default_metadata)
         if opex_type == "2versions_flat":
-            "hi"
+            pax_staging = values['-temp_staging-']
+            preservation1 = values['-2vFlat_preservation-']
+            presentation2 = values['-2vFlat_presentation-']
+            default_metadata = values['-default_metadata-']
+            for dirpath, dirnames, filenames in os.walk(walker):
+                for filename in filenames:
+                    valuables = ""
+                    valuables = dict()
+                    if not filename.endswith(tuple(exclude_list)):
+                        if dirpath.endswith(preservation1):
+                            valuables = ""
+                            valuables = dict()
+                            filename1 = os.path.join(dirpath, filename)
+                            container = filename.replace(f'.{filename.split(".")[-1]}',"")
+                            temp_dir = os.path.join(pax_staging, container)
+                            temp_file = f"{temp_dir}.pax"
+                            opex_target_dir = dirpath.replace(walker, f"{export_dir}/{package_name}/{my_container}").replace(preservation1, "")
+                            target_pax = f"{opex_target_dir}/{container}.pax.zip"
+                            target_metadata = f"{target_pax}.opex"
+                            preservation_representation = f"{temp_dir}/Representation_Preservation/{container}/{filename}"
+                            create_directory(preservation_representation)
+                            shutil.copy2(filename1, preservation_representation)
+                            shutil.copystat(filename1, preservation_representation)
+                            source_checksum = create_sha256(filename1)
+                            target_checksum = create_sha256(preservation_representation)
+                            if source_checksum != target_checksum:
+                                print(f"something went wrong with processing {filename}")
+                                sys.exit()
+                            else:
+                                window['-OUTPUT-'].update(f"\n{filename} verified", append=True)
+                            access_directory = dirpath.replace(preservation1, presentation2)
+                            access_file_root = filename1.replace(dirpath, access_directory)
+                            files_list = [q for q in os.listdir(access_directory) if os.path.isfile(f"{access_directory}/{q}")]
+                            for possibility in files_list:
+                                if not possibility.endswith(".metadata"):
+                                    real_possibility = possibility.replace(f".{possibility.split('.')[-1]}", "")
+                                    if container == real_possibility:
+                                        filename2 = os.path.join(access_directory, possibility)
+                                        presentation_representation = f"{temp_dir}/Representation_Access/{container}/{possibility}"
+                                        create_directory(presentation_representation)
+                                        shutil.copy2(filename2, presentation_representation)
+                                        shutil.copystat(filename2, presentation_representation)
+                                        source_checksum = create_sha256(filename2)
+                                        target_checksum = create_sha256(presentation_representation)
+                                        if source_checksum != target_checksum:
+                                            print(f"something went wrong with processing {possibility}")
+                                            sys.exit()
+                                        else:
+                                            window['-OUTPUT-'].update(f"\n{possibility} verified", append=True)
+                            item_metadata = default_metadata
+                            if os.path.isfile(f"{filename1}.metadata"):
+                                item_metadata = f"{filename1}.metadata"
+                            elif os.path.isfile(f"{filename2}.metadata"):
+                                item_metadata = f"{filename2}.metadata"
+                            shutil.make_archive(f"{temp_file}", "zip", temp_dir)
+                            create_directory(target_pax)
+                            shutil.move(f"{temp_file}.zip", target_pax)
+                            valuables['asset_id'] = container
+                            valuables['asset_title'] = valuables['asset_id']
+                            valuables['asset_description'] = valuables['asset_id']
+                            valuables['asset_tag'] = "open"
+                            valuables['metadata_file'] = item_metadata
+                            make_opex(valuables, target_pax)
+            make_folder_opex(walker, export_dir, package_name, default_metadata)
+            for dirpath, dirnames, filenames in os.walk(pax_staging):
+                for filename in filenames:
+                    try:
+                        filename = os.path.join(dirpath, filename)
+                        window['-OUTPUT-'].update(f"\nattempting to remove {filename}", append=True)
+                        os.remove(filename)
+                    except Exception as error:
+                        window['-OUTPUT-'].update(f"\nException deleting {filename}: {error}", append=True)
+                        continue
+            try:
+                os.removedirs(pax_staging)
+            except Exception as error:
+                window['-OUTPUT-'].update(f"\nException deleting {temp_dir}: {error}", append=True)
+                continue
+            window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {temp_dir}", append=True)
         if opex_type == "2versions_crawler":
-            "hi"
+            pax_staging = values['-temp_staging-']
+            preservation1 = values['-2vTree_preservation-']
+            presentation2 = values['-2vTree_presentation-']
+            default_metadata = values['-default_metadata-']
+            for dirpath, dirnames, filenames in os.walk(walker):
+                if dirpath.endswith(preservation1):
+                    container = dirpath.split('/')[-2]
+                    temp_dir = os.path.join(pax_staging, container)
+                    temp_file = f"{temp_dir}.pax"
+                    opex_target_dir = dirpath.replace(walker, f"{export_dir}/{package_name}/{my_container}").replace(preservation1, "")
+                    target_pax = f"{opex_target_dir[:-1]}.pax.zip"
+                    for filename in filenames:
+                        valuables = ""
+                        valuables = dict()
+                        if not filename.endswith(tuple(exclude_list)):
+                            valuables = ""
+                            valuables = dict()
+                            filename1 = os.path.join(dirpath, filename)
+                            presentation_representation = os.path.join(temp_dir, "Representation_Access")
+                            preservation_representation = os.path.join(temp_dir, "Representation_Preservation")
+                            if object_type == "film":
+                                filename2 = film_check(preservation_representation, filename)
+                            else:
+                                filename2 = f"{preservation_representation}/{filename.split('.')[0]}/{filename}"
+                            create_directory(filename2)
+                            shutil.copy2(filename1, filename2)
+                            shutil.copystat(filename1, filename2)
+                            source_checksum = create_sha256(filename1)
+                            target_checksum = create_sha256(filename2)
+                            if source_checksum != target_checksum:
+                                print(f"something went wrong with process {filename}")
+                                sys.exit()
+                            else:
+                                window['-OUTPUT-'].update(f"\n{filename} verified", append=True)
+                    access_directory = dirpath.replace(preservation1, presentation2)
+                    files_list = [q for q in os.listdir(access_directory) if os.path.isfile(f"{access_directory}/{q}")]
+                    for possibility in files_list:
+                        if not possibility.endswith(tuple(exclude_list)):
+                            source = os.path.join(access_directory, possibility)
+                            if object_type == "film":
+                                target = film_check(presentation_representation, possibility)
+                            else:
+                                target = f"{presentation_representation}/{possibility.split('.')[0]}/{possibility}"
+                            create_directory(target)
+                            shutil.copy2(source, target)
+                            shutil.copystat(source, target)
+                            source_checksum = create_sha256(source)
+                            target_checksum = create_sha256(target)
+                            if source_checksum != target_checksum:
+                                print(f"something went wrong with process {possibility}")
+                                sys.exit()
+                            else:
+                                window['-OUTPUT-'].update(f"\n{possibility} verified", append=True)
+                    item_metadata = default_metadata
+                    if os.path.isfile(f"{dirpath.replace(preservation1, '')}.metadata"):
+                        item_metadata = f"{dirpath.replace(preservation1, '').metadata}"
+                    elif os.path.isfile(f"{dirpath}/{container}.metadata"):
+                        item_metadata = f"{dirpath}/{container}.metadata"
+                    elif os.path.isfile(f"{dirpath.replace(preservation1, presentation2)}/{container}.metadata"):
+                        item_metadata = f"{dirpath.replace(preservation1, presentation2)}/{container}.metadata"
+                    shutil.make_archive(temp_file, "zip", temp_dir)
+                    create_directory(target_pax)
+                    shutil.move(f"{temp_file}.zip", target_pax)
+                    window['-OUTPUT-'].update(f"\n{container} packaged", append=True)
+                    valuables['asset_id'] = container
+                    valuables['asset_title'] = valuables['asset_id']
+                    if object_type != "":
+                        valuables['asset_description'] = object_type
+                    else:
+                        valuables['asset_description'] = valuables['asset_id']
+                    valuables['asset_tag'] = "open"
+                    valuables['metadata_file'] = item_metadata
+                    make_opex(valuables, target_pax)
+            make_folder_opex(walker, export_dir, package_name, default_metadata)
+            for dirpath, dirnames, filenames in os.walk(pax_staging):
+                for filename in filenames:
+                    try:
+                        filename = os.path.join(dirpath, filename)
+                        window['-OUTPUT-'].update(f"\nattempting to remove {filename}", append=True)
+                        os.remove(filename)
+                    except Exception as error:
+                        window['-OUTPUT-'].update(f"\nException deleting {filename}: {error}", append=True)
+                        continue
+            try:
+                os.removedirs(pax_staging)
+            except Exception as error:
+                window['-OUTPUT-'].update(f"\nException deleting {pax_staging}: {error}", append=True)
+                continue
+            window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {pax_staging}", append=True)
+            window['-OUTPUT-'].update("\nAll done", append=True)
         if opex_type == "3versions_crawler_tree":
-            "hi"
-
+            pax_staging = values['-temp_staging-']
+            preservation1 = values['-3vTree_preservation1-']
+            presentation2 = values['-3vTree_presentation2-']
+            presentation3 = values['-3vTree_presentation3-']
+            default_metadata = values['-default_metadata-']
+            for dirpath, dirnames, filenames in os.walk(walker):
+                if dirpath.endswith(preservation1):
+                    container = dirpath.split('/')[-2]
+                    temp_dir = os.path.join(pax_staging, container)
+                    temp_file = f"{temp_dir}.pax"
+                    opex_target_dir = dirpath.replace(walker, f"{export_dir}/{package_name}/{my_container}").replace(preservation1, "")
+                    target_pax = f"{opex_target_dir[:-1]}.pax.zip"
+                    for filename in filenames:
+                        valuables = ""
+                        valuables = dict()
+                        if not filename.endswith(tuple(exclude_list)):
+                            valuables = ""
+                            valuables = dict()
+                            filename1 = os.path.join(dirpath, filename)
+                            presentation_representation_1 = os.path.join(temp_dir, "Representation_Access_1")
+                            presentation_representation_2 = os.path.join(temp_dir, "Representation_Access_2")
+                            preservation_representation = os.path.join(temp_dir, "Representation_Preservation")
+                            if object_type == "film":
+                                filename2 = film_check(preservation_representation, filename)
+                            else:
+                                filename2 = f"{preservation_representation}/{filename.split('.')[0]}/{filename}"
+                            create_directory(filename2)
+                            shutil.copy2(filename1, filename2)
+                            shutil.copystat(filename1, filename2)
+                            source_checksum = create_sha256(filename1)
+                            target_checksum = create_sha256(filename2)
+                            if source_checksum != target_checksum:
+                                print(f"something went wrong with process {filename}")
+                                sys.exit()
+                            else:
+                                window['-OUTPUT-'].update(f"\n{filename} verified", append=True)
+                    access_directory = dirpath.replace(preservation1, presentation2)
+                    files_list = [q for q in os.listdir(access_directory) if os.path.isfile(f"{access_directory}/{q}")]
+                    for possibility in files_list:
+                        if not possibility.endswith(tuple(exclude_list)):
+                            source = os.path.join(access_directory, possibility)
+                            if object_type == "film":
+                                target = film_check(presentation_representation_1, possibility)
+                            else:
+                                target = f"{presentation_representation_1}/{possibility.split('.')[0]}/{possibility}"
+                            create_directory(target)
+                            shutil.copy2(source, target)
+                            shutil.copystat(source, target)
+                            source_checksum = create_sha256(source)
+                            target_checksum = create_sha256(target)
+                            if source_checksum != target_checksum:
+                                print(f"something went wrong with process {possibility}")
+                                sys.exit()
+                            else:
+                                window['-OUTPUT-'].update(f"\n{possibility} verified", append=True)
+                    access_directory = dirpath.replace(preservation1, presentation3)
+                    files_list = [q for q in os.listdir(access_directory) if os.path.isfile(f"{access_directory}/{q}")]
+                    for possibility in files_list:
+                        if not possibility.endswith(tuple(exclude_list)):
+                            source = os.path.join(access_directory, possibility)
+                            if object_type == "film":
+                                target = film_check(presentation_representation_2, possibility)
+                            else:
+                                target = f"{presentation_representation_2}/{possibility.split('.')[0]}/{possibility}"
+                            create_directory(target)
+                            shutil.copy2(source, target)
+                            shutil.copystat(source, target)
+                            source_checksum = create_sha256(source)
+                            target_checksum = create_sha256(target)
+                            if source_checksum != target_checksum:
+                                print(f"something went wrong with process {possibility}")
+                                sys.exit()
+                            else:
+                                window['-OUTPUT-'].update(f"\n{possibility} verified", append=True)
+                    item_metadata = default_metadata
+                    if os.path.isfile(f"{dirpath.replace(preservation1, '')}.metadata"):
+                        item_metadata = f"{dirpath.replace(preservation1, '').metadata}"
+                    elif os.path.isfile(f"{dirpath}/{container}.metadata"):
+                        item_metadata = f"{dirpath}/{container}.metadata"
+                    elif os.path.isfile(f"{dirpath.replace(preservation1, presentation2)}/{container}.metadata"):
+                        item_metadata = f"{dirpath.replace(preservation1, presentation2)}/{container}.metadata"
+                    elif os.path.isfile(f"{dirpath.replace(preservation1, presentation3)}/{container}.metadata"):
+                        item_metadata = f"{dirpath.replace(preservation1, presentation3)}/{container}.metadata"
+                    shutil.make_archive(temp_file, "zip", temp_dir)
+                    create_directory(target_pax)
+                    shutil.move(f"{temp_file}.zip", target_pax)
+                    window['-OUTPUT-'].update(f"\n{container} packaged", append=True)
+                    valuables['asset_id'] = container
+                    valuables['asset_title'] = valuables['asset_id']
+                    if object_type != "":
+                        valuables['asset_description'] = object_type
+                    else:
+                        valuables['asset_description'] = valuables['asset_id']
+                    valuables['asset_tag'] = "open"
+                    valuables['metadata_file'] = item_metadata
+                    make_opex(valuables, target_pax)
+            make_folder_opex(walker, export_dir, package_name, default_metadata)
+            for dirpath, dirnames, filenames in os.walk(pax_staging):
+                for filename in filenames:
+                    try:
+                        filename = os.path.join(dirpath, filename)
+                        window['-OUTPUT-'].update(f"\nattempting to remove {filename}", append=True)
+                        os.remove(filename)
+                    except Exception as error:
+                        window['-OUTPUT-'].update(f"\nException deleting {filename}: {error}", append=True)
+                        continue
+            try:
+                os.removedirs(pax_staging)
+            except Exception as error:
+                window['-OUTPUT-'].update(f"\nException deleting {pax_staging}: {error}", append=True)
+                continue
+            window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {pax_staging}", append=True)
+            window['-OUTPUT-'].update("\nAll done", append=True)
+        if notification is True:
+            finished(values['-SOUND-'])
     if event == "Close" or event == Sg.WIN_CLOSED:
         break
 window.close()
