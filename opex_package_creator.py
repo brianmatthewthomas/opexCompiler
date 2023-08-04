@@ -13,9 +13,6 @@ from xml.etree.ElementTree import Element, SubElement
 from pydub import AudioSegment
 from pydub.playback import play
 
-import opexCreator.opexCreator
-from opexCreator import opexCreator_3versions
-
 def finished(myAudio):
     sound = AudioSegment.from_file(myAudio, type="wav")
     play(sound)
@@ -25,7 +22,7 @@ def create_directory(fileName):
         try:
             os.makedirs(os.path.dirname(fileName), exist_ok=True)
         except OSError as exc:
-            if exc.errno != errno.EExist:
+            if exc.errno != errno.EEXIST:
                 raise
 
 def create_sha256(filename):
@@ -655,12 +652,10 @@ while True:
                         os.remove(filename)
                     except Exception as error:
                         window['-OUTPUT-'].update(f"\nException deleting {filename}: {error}", append=True)
-                        continue
-            try:
-                os.removedirs(pax_staging)
-            except Exception as error:
-                window['-OUTPUT-'].update(f"\nException deleting {temp_dir}: {error}", append=True)
-                continue
+                try:
+                    os.removedirs(dirpath)
+                except Exception as error:
+                    window['-OUTPUT-'].update(f"\nException deleting {temp_dir}: {error}", append=True)
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {temp_dir}", append=True)
         if opex_type == "2versions_crawler":
             pax_staging = values['-temp_staging-']
@@ -745,12 +740,10 @@ while True:
                         os.remove(filename)
                     except Exception as error:
                         window['-OUTPUT-'].update(f"\nException deleting {filename}: {error}", append=True)
-                        continue
-            try:
-                os.removedirs(pax_staging)
-            except Exception as error:
-                window['-OUTPUT-'].update(f"\nException deleting {pax_staging}: {error}", append=True)
-                continue
+                try:
+                    os.removedirs(dirpath)
+                except Exception as error:
+                    window['-OUTPUT-'].update(f"\nException deleting {dirpath}: {error}", append=True)
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {pax_staging}", append=True)
             window['-OUTPUT-'].update("\nAll done", append=True)
         if opex_type == "3versions_crawler_tree":
@@ -859,12 +852,10 @@ while True:
                         os.remove(filename)
                     except Exception as error:
                         window['-OUTPUT-'].update(f"\nException deleting {filename}: {error}", append=True)
-                        continue
-            try:
-                os.removedirs(pax_staging)
-            except Exception as error:
-                window['-OUTPUT-'].update(f"\nException deleting {pax_staging}: {error}", append=True)
-                continue
+                try:
+                    os.removedirs(dirpath)
+                except Exception as error:
+                    window['-OUTPUT-'].update(f"\nException deleting {dirpath}: {error}", append=True)
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {pax_staging}", append=True)
             window['-OUTPUT-'].update("\nAll done", append=True)
         if notification is True:

@@ -9,15 +9,15 @@ delay = 60
 quiet_start = 08:00:00
 quiet_end = 17:00:01
 interval = 60
-export_location = /media/sf_Z_DRIVE/export2
-pax_staging = /media/sf_Z_DRIVE/temp
+export_location = /media/sf_Documents/opex_package/export2
+pax_staging = /media/sf_Documents/opex_package/temp
 transfer_agent =
 sound = /media/sf_Documents/tng-computer-transfercomplete.wav
-default_metadata = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_2115/sorted2/C/Cass/rhrd-cass-countyClerk-probateMinutes.xml
+default_metadata = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_2115/sorted2/B/Bosque/rhrd-bosque-countyClerk-probateMinutes.xml
 [1_version_flat]
 root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/Index to Probate Minutes_flat
 [2_version_flat]
-root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/Index to Probate Minutes_flat
+root_folder = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_2115/sorted2/B/Bosque/probateMinutes/probateMinutes
 preservation_folder = preservica_preservation1_lnk
 presentation_folder = preservica_presentation2_lnk
 [2_version_crawler]
@@ -30,7 +30,7 @@ preservation_folder = preservation1
 intermediary_folder = presentation2
 presentation_folder = presentation3
 [3_version_crawler_tree]
-root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/home
+root_folder = /media/sf_X_DRIVE/DigitizationTransferFolder/TDCJ_20186_1998038_46
 preservation_folder = preservation1
 intermediary_folder = presentation2
 presentation_folder = presentation3
