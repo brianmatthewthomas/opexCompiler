@@ -129,7 +129,8 @@ def make_folder_opex(source_dir, export_dir, package_UUID, metadata):
         if metadata != "":
             opex_metadata = SubElement(opex, "opex:DescriptiveMetadata")
             opex_metadata.text = "This is where the metadata goes"
-        export_file = f"{dirpath}/{dirpath.split('/')[-1]}.opex"
+        new_dirpath = dirpath.replace('\\', '/')
+        export_file = f"{dirpath}/{new_dirpath.split('/')[-1]}.opex"
         with open(export_file, "w", encoding='utf-8') as w:
             w.write(prettify(opex))
         w.close()
@@ -652,10 +653,10 @@ while True:
                         os.remove(filename)
                     except Exception as error:
                         window['-OUTPUT-'].update(f"\nException deleting {filename}: {error}", append=True)
-                try:
+                '''try:
                     os.removedirs(dirpath)
                 except Exception as error:
-                    window['-OUTPUT-'].update(f"\nException deleting {temp_dir}: {error}", append=True)
+                    window['-OUTPUT-'].update(f"\nException deleting {temp_dir}: {error}", append=True)'''
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {temp_dir}", append=True)
         if opex_type == "2versions_crawler":
             pax_staging = values['-temp_staging-']
@@ -740,10 +741,10 @@ while True:
                         os.remove(filename)
                     except Exception as error:
                         window['-OUTPUT-'].update(f"\nException deleting {filename}: {error}", append=True)
-                try:
+                '''try:
                     os.removedirs(dirpath)
                 except Exception as error:
-                    window['-OUTPUT-'].update(f"\nException deleting {dirpath}: {error}", append=True)
+                    window['-OUTPUT-'].update(f"\nException deleting {dirpath}: {error}", append=True)'''
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {pax_staging}", append=True)
             window['-OUTPUT-'].update("\nAll done", append=True)
         if opex_type == "3versions_crawler_tree":
@@ -852,14 +853,17 @@ while True:
                         os.remove(filename)
                     except Exception as error:
                         window['-OUTPUT-'].update(f"\nException deleting {filename}: {error}", append=True)
-                try:
+                '''try:
                     os.removedirs(dirpath)
                 except Exception as error:
-                    window['-OUTPUT-'].update(f"\nException deleting {dirpath}: {error}", append=True)
+                    window['-OUTPUT-'].update(f"\nException deleting {dirpath}: {error}", append=True)'''
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {pax_staging}", append=True)
             window['-OUTPUT-'].update("\nAll done", append=True)
         if notification is True:
-            finished(values['-SOUND-'])
+            try:
+                finished(values['-SOUND-'])
+            except:
+                window['-OUTPUT-'].update(f"\ntrouble playing {values['-SOUND-']}, the process is stile COMPLETE though", append=True)
     if event == "Close" or event == Sg.WIN_CLOSED:
         break
 window.close()

@@ -17,7 +17,7 @@ default_metadata = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_2115/sorted
 [1_version_flat]
 root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/Index to Probate Minutes_flat
 [2_version_flat]
-root_folder = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_2115/sorted2/B/Bosque/probateMinutes/probateMinutes
+root_folder = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_2115/sorted2/B/Brazoria/probateAdmin
 preservation_folder = preservica_preservation1_lnk
 presentation_folder = preservica_presentation2_lnk
 [2_version_crawler]
