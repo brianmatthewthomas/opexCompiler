@@ -7,6 +7,7 @@ import uuid
 import errno
 
 import PySimpleGUI as Sg
+import lxml.etree as ET
 from xml.dom import minidom
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, SubElement
@@ -89,11 +90,16 @@ def make_opex(valuables, filename2):
 
 def make_folder_opex(source_dir, export_dir, package_UUID, metadata):
     for dirpath, dirnames, filenames in os.walk(f"{export_dir}/{package_UUID}"):
-        target_metadata = dirpath.replace(f"{dirpath}/{package_UUID}", source_dir)
+        target_metadata = dirpath.replace(f"{export_dir}/{package_UUID}", source_dir)
+        target_metadata = target_metadata.replace(f"{source_dir.split('/')[-1]}\\{source_dir.split('/')[-1]}", source_dir.split('/')[-1])
+        target2 = target_metadata.split("/")[-1].split("\\")[-1]
+        target_metadata2 = f"{target_metadata}/{target2}.metadata"
         target_metadata = f"{target_metadata}.metadata"
         metadata = metadata
         if os.path.isfile(target_metadata):
             metadata = target_metadata
+        if os.path.isfile(target_metadata2):
+            metadata = target_metadata2
         opex = Element('opex:OPEXMetadata', {'xmlns:opex': 'http://www.openpreservationexchange.org/opex/v1.1'})
         opex_transfer = SubElement(opex, 'opex:Transfer')
         #opex_source = SubElement(opex_transfer, "opex:SourceID")
@@ -121,9 +127,9 @@ def make_folder_opex(source_dir, export_dir, package_UUID, metadata):
                 opex_directory.text = x
         opex_properties = SubElement(opex, 'opex:Properties')
         opex_title = SubElement(opex_properties, "opex:Title")
-        opex_title.text = dirpath.split("/")[-1]
+        opex_title.text = dirpath.split("/")[-1].split("\\")[-1]
         opex_description = SubElement(opex_properties, 'opex:Description')
-        opex_description.text = dirpath.split("/")[-1]
+        opex_description.text = dirpath.split("/")[-1].split("\\")[-1]
         opex_security = SubElement(opex_properties, 'opex:SecurityDescriptor')
         opex_security.text = "open"
         if metadata != "":
@@ -142,6 +148,7 @@ def make_folder_opex(source_dir, export_dir, package_UUID, metadata):
                 with open(export_file, "r") as r:
                     fileinfo = r.read()
                     fileinfo = fileinfo.replace("This is where the metadata goes", filedata)
+                    fileinfo = fileinfo.replace("\n\n", "\n")
                     with open(export_file, "w") as w:
                         w.write(fileinfo)
                     w.close()
@@ -166,6 +173,11 @@ intermediary_folder = presentation2\npresentation_folder = presentation3'''
 
 Sg.theme('DarkGreen5')
 left_layout = [[
+        Sg.Checkbox(text="Validate xml", default=False, key="-VALIDATE-",
+                 tooltip="Select this to validate sidecar metadata files before they are inserted into opex files, "
+                         "uncheck to run tool against file set")
+    ],
+    [
         Sg.Radio("Simple structure", "radio1", default=False, key="-TYPE_1v-",
                  tooltip="Single representation"),
     ],
@@ -551,7 +563,27 @@ while True:
         my_container = walker.split("/")[-1]
         package_identifier = str(uuid.uuid4())
         package_name = package_identifier
-        if opex_type == "1versions_flat":
+        if values['-VALIDATE-'] is True:
+            flag = False
+            baddie_list = []
+            window['-OUTPUT-'].update("\nstarting xml validation routine, remember to uncheck validation to run opex packaging", append=True)
+            for dirpath, dirnames, filenames in os.walk(walker):
+                for filename in filenames:
+                    if filename.endswith(".xml") or filename.endswith(".metadata"):
+                        filename = os.path.join(dirpath, filename)
+                        try:
+                            ET.parse(filename)
+                        except:
+                            window['-OUTPUT-'].update(f"\nparsing error with {filename}", append=True)
+                            flag = True
+                            baddie_list.append(filename)
+            if flag is False:
+                window['-OUTPUT-'].update("\nNo xml errors found, good job, okay to continue. Uncheck validation box", append=True)
+            if flag is True:
+                for item in baddie_list:
+                    window['-OUTPUT-'].update(f"\nXML error in {item}", append=True)
+                window['-OUTPUT-'].update("\nXML errors found, scroll through dialog box to see where", append=True)
+        if opex_type == "1versions_flat" and values['-VALIDATE-'] is False:
             default_metadata = values['-default_metadata-']
             for dirpath, dirnames, filenames in os.walk(walker):
                 for filename in filenames:
@@ -580,7 +612,7 @@ while True:
                             window['-OUTPUT-'].update(f"\n{filename} verified", append=True)
                         make_opex(valuables, filename2)
             make_folder_opex(walker, export_dir, package_name, default_metadata)
-        if opex_type == "2versions_flat":
+        if opex_type == "2versions_flat" and values['-VALIDATE-'] is False:
             pax_staging = values['-temp_staging-']
             preservation1 = values['-2vFlat_preservation-']
             presentation2 = values['-2vFlat_presentation-']
@@ -644,28 +676,28 @@ while True:
                             valuables['asset_tag'] = "open"
                             valuables['metadata_file'] = item_metadata
                             make_opex(valuables, target_pax)
-            make_folder_opex(walker, export_dir, package_name, default_metadata)
-            for dirpath, dirnames, filenames in os.walk(pax_staging):
-                for filename in filenames:
-                    try:
-                        filename = os.path.join(dirpath, filename)
-                        window['-OUTPUT-'].update(f"\nattempting to remove {filename}", append=True)
-                        os.remove(filename)
-                    except Exception as error:
-                        window['-OUTPUT-'].update(f"\nException deleting {filename}: {error}", append=True)
+                for x, y, z in os.walk(pax_staging):
+                    for a in z:
+                        try:
+                            a = os.path.join(x, a)
+                            window['-OUTPUT-'].update(f"\nattempting to remove {a}", append=True)
+                            os.remove(a)
+                        except Exception as error:
+                            window['-OUTPUT-'].update(f"\nException deleting {a}: {error}", append=True)
                 '''try:
                     os.removedirs(dirpath)
                 except Exception as error:
                     window['-OUTPUT-'].update(f"\nException deleting {temp_dir}: {error}", append=True)'''
+            make_folder_opex(walker, export_dir, package_name, default_metadata)
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {temp_dir}", append=True)
-        if opex_type == "2versions_crawler":
+        if opex_type == "2versions_crawler" and values['-VALIDATE-'] is False:
             pax_staging = values['-temp_staging-']
             preservation1 = values['-2vTree_preservation-']
             presentation2 = values['-2vTree_presentation-']
             default_metadata = values['-default_metadata-']
             for dirpath, dirnames, filenames in os.walk(walker):
                 if dirpath.endswith(preservation1):
-                    container = dirpath.split('/')[-2]
+                    container = dirpath.split('/')[-1].split('\\')[-2]
                     temp_dir = os.path.join(pax_staging, container)
                     temp_file = f"{temp_dir}.pax"
                     opex_target_dir = dirpath.replace(walker, f"{export_dir}/{package_name}/{my_container}").replace(preservation1, "")
@@ -732,22 +764,22 @@ while True:
                     valuables['asset_tag'] = "open"
                     valuables['metadata_file'] = item_metadata
                     make_opex(valuables, target_pax)
-            make_folder_opex(walker, export_dir, package_name, default_metadata)
-            for dirpath, dirnames, filenames in os.walk(pax_staging):
-                for filename in filenames:
-                    try:
-                        filename = os.path.join(dirpath, filename)
-                        window['-OUTPUT-'].update(f"\nattempting to remove {filename}", append=True)
-                        os.remove(filename)
-                    except Exception as error:
-                        window['-OUTPUT-'].update(f"\nException deleting {filename}: {error}", append=True)
+                for x, y, z in os.walk(pax_staging):
+                    for a in z:
+                        try:
+                            a = os.path.join(x, a)
+                            window['-OUTPUT-'].update(f"\nattempting to remove {a}", append=True)
+                            os.remove(a)
+                        except Exception as error:
+                            window['-OUTPUT-'].update(f"\nException deleting {a}: {error}", append=True)
                 '''try:
                     os.removedirs(dirpath)
                 except Exception as error:
                     window['-OUTPUT-'].update(f"\nException deleting {dirpath}: {error}", append=True)'''
+            make_folder_opex(walker, export_dir, package_name, default_metadata)
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {pax_staging}", append=True)
             window['-OUTPUT-'].update("\nAll done", append=True)
-        if opex_type == "3versions_crawler_tree":
+        if opex_type == "3versions_crawler_tree" and values['-VALIDATE-'] is False:
             pax_staging = values['-temp_staging-']
             preservation1 = values['-3vTree_preservation1-']
             presentation2 = values['-3vTree_presentation2-']
@@ -755,7 +787,7 @@ while True:
             default_metadata = values['-default_metadata-']
             for dirpath, dirnames, filenames in os.walk(walker):
                 if dirpath.endswith(preservation1):
-                    container = dirpath.split('/')[-2]
+                    container = dirpath.split('/')[-1].split('\\')[-2]
                     temp_dir = os.path.join(pax_staging, container)
                     temp_file = f"{temp_dir}.pax"
                     opex_target_dir = dirpath.replace(walker, f"{export_dir}/{package_name}/{my_container}").replace(preservation1, "")
@@ -844,19 +876,19 @@ while True:
                     valuables['asset_tag'] = "open"
                     valuables['metadata_file'] = item_metadata
                     make_opex(valuables, target_pax)
-            make_folder_opex(walker, export_dir, package_name, default_metadata)
-            for dirpath, dirnames, filenames in os.walk(pax_staging):
-                for filename in filenames:
-                    try:
-                        filename = os.path.join(dirpath, filename)
-                        window['-OUTPUT-'].update(f"\nattempting to remove {filename}", append=True)
-                        os.remove(filename)
-                    except Exception as error:
-                        window['-OUTPUT-'].update(f"\nException deleting {filename}: {error}", append=True)
+                for x, y, z in os.walk(pax_staging):
+                    for a in z:
+                        try:
+                            a = os.path.join(x, a)
+                            window['-OUTPUT-'].update(f"\nattempting to remove {a}", append=True)
+                            os.remove(a)
+                        except Exception as error:
+                            window['-OUTPUT-'].update(f"\nException deleting {a}: {error}", append=True)
                 '''try:
                     os.removedirs(dirpath)
                 except Exception as error:
                     window['-OUTPUT-'].update(f"\nException deleting {dirpath}: {error}", append=True)'''
+            make_folder_opex(walker, export_dir, package_name, default_metadata)
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {pax_staging}", append=True)
             window['-OUTPUT-'].update("\nAll done", append=True)
         if notification is True:
