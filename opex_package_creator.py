@@ -349,15 +349,12 @@ layout = [
                        "do anything.",
                bind_return_key=True)],
     [
-        Sg.ProgressBar(1, orientation="h", size=(50, 20), bar_color="dark green", key="-Progress-", border_width=5,
-                       relief="RELIEF_SUNKEN")
-    ],
-    [
-        Sg.Text("", key="-STATUS-")
-    ],
-    [
-        Sg.Multiline(default_text="Click execute to show progress\n------------------------------", size=(70, 5),
+        Sg.Push(),
+        Sg.Image(source=my_icon),
+        Sg.Multiline(default_text="Click execute to show progress\n------------------------------", size=(100, 10),
                      auto_refresh=True, reroute_stdout=False, key="-OUTPUT-", autoscroll=True, border_width=5),
+        Sg.Image(source=my_icon),
+        Sg.Push(),
     ],
     ''''''
 ]
