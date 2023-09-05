@@ -78,6 +78,7 @@ def make_opex(valuables, filename2):
         if valuables['metadata_file'] != "":
             with open(valuables['metadata_file'], "r") as r:
                 filedata = r.read()
+                filedata = filedata.replace('<?xml version="1.0" ?>', '')
                 filedata = filedata.replace('<?xml version="1.0" encoding="UTF-8"?>', '')
                 filedata = filedata.replace('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', '')
                 with open(export_file, "r") as r:
@@ -143,6 +144,7 @@ def make_folder_opex(source_dir, export_dir, package_UUID, metadata):
         if metadata != "":
             with open(metadata, "r") as r:
                 filedata = r.read()
+                filedata = filedata.replace('<?xml version="1.0" ?>', '')
                 filedata = filedata.replace('<?xml version="1.0" encoding="UTF-8"?>', '')
                 filedata = filedata.replace('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', '')
                 with open(export_file, "r") as r:
@@ -693,6 +695,16 @@ while True:
                     temp_file = f"{temp_dir}.pax"
                     opex_target_dir = dirpath.replace(walker, f"{export_dir}/{package_name}/{my_container}").replace(preservation1, "")
                     target_pax = f"{opex_target_dir[:-1]}.pax.zip"
+                    flag = False
+                    flag_check = []
+                    for filename in filenames:
+                        if object_type != "film":
+                            if not filename.endswith(".metadata"):
+                                root_name = filename.split(".")[0]
+                                if root_name in flag_check:
+                                    flag = True
+                                else:
+                                    flag_check.append(root_name)
                     for filename in filenames:
                         valuables = ""
                         valuables = dict()
@@ -704,6 +716,8 @@ while True:
                             preservation_representation = os.path.join(temp_dir, "Representation_Preservation")
                             if object_type == "film":
                                 filename2 = film_check(preservation_representation, filename)
+                            elif flag is True:
+                                filename2 = f"{preservation_representation}/{filename.replace('.', '_')}/{filename}"
                             else:
                                 filename2 = f"{preservation_representation}/{filename.split('.')[0]}/{filename}"
                             create_directory(filename2)
@@ -718,11 +732,23 @@ while True:
                                 window['-OUTPUT-'].update(f"\n{filename} verified", append=True)
                     access_directory = dirpath.replace(preservation1, presentation2)
                     files_list = [q for q in os.listdir(access_directory) if os.path.isfile(f"{access_directory}/{q}")]
+                    flag = False
+                    flag_check = []
+                    for possibility in files_list:
+                        if object_type != "film":
+                            if not filename.endswith(".metadata"):
+                                root_name = filename.split(".")[0]
+                                if root_name in flag_check:
+                                    flag = True
+                                else:
+                                    flag_check.append(root_name)
                     for possibility in files_list:
                         if not possibility.endswith(tuple(exclude_list)):
                             source = os.path.join(access_directory, possibility)
                             if object_type == "film":
                                 target = film_check(presentation_representation, possibility)
+                            elif flag is True:
+                                target = f"{presentation_representation}/{possibility.replace('.', '_')}/{possibility}"
                             else:
                                 target = f"{presentation_representation}/{possibility.split('.')[0]}/{possibility}"
                             create_directory(target)
@@ -783,6 +809,16 @@ while True:
                     temp_file = f"{temp_dir}.pax"
                     opex_target_dir = dirpath.replace(walker, f"{export_dir}/{package_name}/{my_container}").replace(preservation1, "")
                     target_pax = f"{opex_target_dir[:-1]}.pax.zip"
+                    flag = False
+                    flag_check = []
+                    for filename in filenames:
+                        if object_type != "film":
+                            if not filename.endswith(".metadata"):
+                                root_name = filename.split(".")[0]
+                                if root_name in flag_check:
+                                    flag = True
+                                else:
+                                    flag_check.append(root_name)
                     for filename in filenames:
                         valuables = ""
                         valuables = dict()
@@ -795,6 +831,8 @@ while True:
                             preservation_representation = os.path.join(temp_dir, "Representation_Preservation")
                             if object_type == "film":
                                 filename2 = film_check(preservation_representation, filename)
+                            elif flag is True:
+                                filename2 = f"{preservation_representation}/{filename.replace('.', '_')}/{filename}"
                             else:
                                 filename2 = f"{preservation_representation}/{filename.split('.')[0]}/{filename}"
                             create_directory(filename2)
@@ -809,11 +847,23 @@ while True:
                                 window['-OUTPUT-'].update(f"\n{filename} verified", append=True)
                     access_directory = dirpath.replace(preservation1, presentation2)
                     files_list = [q for q in os.listdir(access_directory) if os.path.isfile(f"{access_directory}/{q}")]
+                    flag = False
+                    flag_check = []
+                    for possibility in files_list:
+                        if object_type != "film":
+                            root_name = possibility.split(".")[0]
+                            if not possibility.endswith(".metadata"):
+                                if root_name in flag_check:
+                                    flag = True
+                                else:
+                                    flag_check.append(root_name)
                     for possibility in files_list:
                         if not possibility.endswith(tuple(exclude_list)):
                             source = os.path.join(access_directory, possibility)
                             if object_type == "film":
                                 target = film_check(presentation_representation_1, possibility)
+                            elif flag is True:
+                                target = f"{presentation_representation_1}/{possibility.replace('.', '_')}/{possibility}"
                             else:
                                 target = f"{presentation_representation_1}/{possibility.split('.')[0]}/{possibility}"
                             create_directory(target)
@@ -828,11 +878,23 @@ while True:
                                 window['-OUTPUT-'].update(f"\n{possibility} verified", append=True)
                     access_directory = dirpath.replace(preservation1, presentation3)
                     files_list = [q for q in os.listdir(access_directory) if os.path.isfile(f"{access_directory}/{q}")]
+                    flag = False
+                    flag_check = []
+                    for possibility in files_list:
+                        if object_type != "film":
+                            root_name = possibility.split(".")[0]
+                            if not possibility.endswith(".metadata"):
+                                if root_name in flag_check:
+                                    flag = True
+                                else:
+                                    flag_check.append(root_name)
                     for possibility in files_list:
                         if not possibility.endswith(tuple(exclude_list)):
                             source = os.path.join(access_directory, possibility)
                             if object_type == "film":
                                 target = film_check(presentation_representation_2, possibility)
+                            elif flag is True:
+                                target = f"{presentation_representation_2}/{possibility.replace('.', '_')}/{possibility}"
                             else:
                                 target = f"{presentation_representation_2}/{possibility.split('.')[0]}/{possibility}"
                             create_directory(target)
