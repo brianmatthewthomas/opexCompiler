@@ -58,12 +58,20 @@ def create_sha256(filename):
     return fixity
 
 def film_check(my_target_dir, filename):
-    if filename.split(".")[-1] == "srt":
+    if filename.split(".")[-1] == "srt" and filename.split(".")[-2] == "en":
+        filename2 = f"{my_target_dir}/English/{filename}"
+    elif filename.split(".")[-1] == "srt" and filename.split(".")[-2] == "es":
+        filename2 = f"{my_target_dir}/Spanish/{filename}"
+    elif filename.split(".")[-1] == "srt" and filename.split(".")[-2] == "jp":
+        filename2 = f"{my_target_dir}/Japanese/{filename}"
+    elif filename.split(".")[-1] == "srt":
         filename2 = f"{my_target_dir}/English/{filename}"
     elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "en":
         filename2 = f"{my_target_dir}/English/{filename}"
     elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "es":
         filename2 = f"{my_target_dir}/Spanish/{filename}"
+    elif filename.split(".")[-1] == "vtt" and filename.split(".")[-2] == "jp":
+        filename2 = f"{my_target_dir}/Japanese/{filename}"
     elif filename.endswith(tuple(['mp4', 'm4v', 'mov'])):
         filename2 = f"{my_target_dir}/Movie/{filename}"
     else:
