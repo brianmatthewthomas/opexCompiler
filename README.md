@@ -49,3 +49,81 @@ If you use a different security tag for different types of files, such as `Digit
 `complexExample.py` is a complicated example of how you can leverage this tool to create an iterator that will crawl a directory to create assets as appropriate. The basic assumption of this script/program is that you put all the files for one manifestation of the object in a single folder and that if you have metadata files you use the convention of .metadata for the file.
 
 The opexCreator is set to dump a failed api upload to a transfer agent for other upload. For this to work you need to designate the folder in the `opexCreator.py` around line 353 and the `opexCreator_3versions.py` around line 411. It is default set to "/media/sf_transfer_agent" because that is how the author designated the link to the location of the transfer agent in his virtual machine.
+
+# pdfCompiler_gui
+The PDF Compiler GUI addresses a problem of needing to compiled large sets of files into PDF files, and in some cases to add OCR to the output. It is meant is written for both linux and windows, with the intent to run on Windows after the executable is compiled. To get OCR functionality it is necessary to get a copy of the latest version of tesseract installed on your machine. The below directions for installation are assuming creation of the tool using a linux virtual environment. Without authority to install software on the Windows computer. Presumable, some of these directions can be adapted if you are able to install software on your computer so adapt as needed.
+
+## Steps to Generate the Executable
+1. Install wine on your computer
+2. Install python in your wine folder. Executable to do that can be found at `python.org`. You should be able to copy the executable download into the wine folder and double-click to run it.
+3. Install the necessary dependencies within the pythong environment by using a Terminal command of `wine ./Scripts/pip3.exe install [module name]`
+   * It is possible you will need to install pip3 before running step 3.
+   * It will be useful to install the dependencies in the order they exist in the compiler script
+4. Install Tesseract into the wine folder.
+   * Go to `https://github.com/UB-Mannheim/tesseract/wiki` for download
+   * Push the downloaded executable to your wine folder
+   * Double click and follow the installation tool directions. Make sure to install into the wine folder
+5. Compile the executable by running in the terminal: `wine ./Scripts/pytinstaller -wF [path to script/scriptname]`
+   * If error messages crop up follow through any steps to remediate the errors until it can run successfully
+   * The executable components are staged in the 'build' folder and the exe file if located in the 'dist' folder.
+   * If you have to resolve errors it is important to delete the components folder from the 'build' directory otherwise pyinstaller will just assume everything is there and do nothing useful
+6. Copy the executable into the Tesseract-OCR folder created by installing tesseract into wine
+7. Copy this completed package to where you want. Double-click the output executable from within the Tesseract folder to run.
+   * Why run in the Tesseract folder? It is necessary to have tesseract in the system path in windows or immediately accessible to the tool. The best way to do that is to have the executable in the same folder as Tesseract.
+
+## Running the tool
+The tool supports OCR, non-OCR and Auto-selection of OCR. These are options based on radio buttons.
+Note: When running the Auto option, the tool will select what to OCR based on whether 'ocr' is in the path to the folders to work on. Don't use 'OCR' use 'ocr' or it won't work.
+
+Note as well: This tool operates on a crawler method so you can target a root folder and run it against the whole file set to generate multiple PDFs.
+
+The following variables need to be in place:
+1. Source folder: Use the browse button to locate the parent/root folder for everything. It will go down recursively so you can target a parent folder for a massive number of files but be cognizant that it has to compile some data before starting so selecting something with 100,000 files may take a minute to begin.
+2. Output Folder name: this is the folder that will be generated in parallel to the structure for the images used to compile the PDF.
+3. Preservation Folder name: this is the sibling folder for the Output folder where the preservation files are located. This is where the sidecar metadata used to generate the PDF metadata is sources from.
+4. Presentation Folder name: This is the sibling folder for the output folder where the jpgs being compiled into a PDF lives.
+
+Click on Execute to get the process going, it may take two clicks.
+### How it works
+The tool goes through several steps.
+1. Crawl the directory structure based on the source folder designated and compile a list of locations where the presentation Folder name exists.
+2. Generate primary status bar data based on the number of items in the list
+3. Go through the items in the list and
+   * If there is a PDF of the correct name in the output directory, skip to the bottom and move to the next item on the list
+   * Create a page range for the items to be compiled into a PDF
+   * Get a sorted listing of the files in the directory jpg
+   * Get the size of the listing
+   * Generate a space in memory for a compiled PDF
+   * For each file
+     * if OCR is not applicable, save a temp PDF and append that the compiled PDF
+     * if OCR is applicable, pass the image through Tesseract with output as binary PDF format and append this to the compiled PDF
+     * update the status second status bare to show progress
+   * Once all images have been processed, save the compiled PDF to the output sibling folder
+   * Gather metadata for the compiled PDF by
+     * reading the first metadata file as the baseline
+     * updating part of the title to reflect the numeric sequence (pages 1-233 for example) for the compilation
+   * advance the master bar to reflect processing is completed
+
+### Assumptions and caveats
+This tool was developed to specifically address mass PDF generation and OCR for files received by Ancestry.com that had been organized into volumes as a natural organizational unit. As such a few circumstances apply
+1. The directory immediately preceding the preservation/presentation/output folder is the desired name of the PDF to be put into the output folder
+2. For each preservation file there is a sidecar metadata file in existence with core metadata about the volume as a whole
+3. The page numbers are reflected in the jpg naming convention where the pre-extension filename ends with a `-####` or a `_####`
+4. The title row of the metadata ends with `microfilm image [number goes here]`. This is the value replaces by the gathered page range data
+   * lines 219ish thru 234ish deal with this issue if you want it changed. future iterations may allow for metadata generation to be optional
+5. The script **will** crash if there is no .metadata sidecar file associated with the first item in the Preservation folder
+6. Files will be organized as an atomic unit as indicated generally below. The creator uses Preservica and this generally patches their paradigm for handling files. Organization into parallel structures where master and presentation files for multiple volumes are stored into separate root directory structures will cause a crash
+```commandline
+Some master folder
+    *myPDF file1
+        *Presentation2
+            *File1.jpg
+            *file2.jpg
+            *file3.jpg
+        *Preservation1
+            *File1.tif
+            *File2.tif
+            *File3.tif
+    *myPDF file2
+        *etc
+```
