@@ -626,6 +626,13 @@ while True:
             flag = False
             baddie_list = []
             window['-OUTPUT-'].update("\nstarting xml validation routine, remember to uncheck validation to run opex packaging", append=True)
+            master_counter = 0
+            for dirpath, dirnames, filenames in os.walk(walker):
+                for filename in filenames:
+                    if filename.endswith(".xml") or filename.endswith(".metadata"):
+                        master_counter += 1
+            window['-OUTPUT-'].update("\ngathered progress bar information", append=True)
+            xml_count = 0
             for dirpath, dirnames, filenames in os.walk(walker):
                 for filename in filenames:
                     if filename.endswith(".xml") or filename.endswith(".metadata"):
@@ -636,6 +643,8 @@ while True:
                             window['-OUTPUT-'].update(f"\nparsing error with {filename}", append=True)
                             flag = True
                             baddie_list.append(filename)
+                        xml_count += 1
+                        window['-Progress-'].update_bar(xml_count, master_counter)
             if flag is False:
                 window['-OUTPUT-'].update("\nNo xml errors found, good job, okay to continue. Uncheck validation box", append=True)
             if flag is True:
