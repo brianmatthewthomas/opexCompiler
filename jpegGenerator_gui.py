@@ -39,6 +39,8 @@ def multipleImages(filepath=str, extension=str, intermediary=str, resolution=str
                     temp = rgb_im.save(filename2, format='JPEG', dpi=(resolution, resolution), optimize=True)
                     now = time.asctime()
                     window['-OUTPUT-'].update(f"\n{filename2} generated at {now}", append=True)
+                quick_math = str((counter1/counter)*100)[:5]
+                window["-progress_percent2-"].update(f"{quick_math}%")
                 window["-Progress2-"].update_bar(counter1, counter)
 
 
@@ -174,7 +176,7 @@ layout = [
     ],
     [
         SG.Push(),
-        SG.T("0%", key="-progress_percent-"),
+        SG.T("00.00%", key="-progress_percent-"),
         SG.ProgressBar(max_value=1, orientation="h", size=(50, 20), bar_color="dark green", key="-Progress1-", border_width=5, relief="RELIEF_SUNKEN"),
         SG.Push()
     ],
@@ -185,6 +187,7 @@ layout = [
     ],
     [
         SG.Push(),
+        SG.T("00.00%", key="-progress_percent2-"),
         SG.ProgressBar(max_value=1, orientation="h", size=(50, 20), bar_color="dark green", key="-Progress2-", border_width=5, relief="RELIEF_SUNKEN"),
         SG.Push()
     ],
@@ -230,7 +233,7 @@ while True:
                 intermediary = item.replace(source_preservation, output_presentation)
                 multipleImages(item, input_extension, intermediary, resolution)
                 counter1 += 1
-                quick_math = str((counter1/master)*100)[:4]
+                quick_math = str((counter1/master)*100)[:5]
                 window["-progress_percent-"].update(f"{quick_math}%")
                 window["-Progress1-"].update_bar(counter1, master)
                 window["-OUTPUT-"].update(f"\nfinished processing {item}", append=True)
