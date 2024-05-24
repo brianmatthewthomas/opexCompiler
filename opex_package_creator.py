@@ -11,12 +11,6 @@ import lxml.etree as ET
 from xml.dom import minidom
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, SubElement
-from pydub import AudioSegment
-from pydub.playback import play
-
-def finished(myAudio):
-    sound = AudioSegment.from_file(myAudio, type="wav")
-    play(sound)
 
 def progressCounty(directory):
     counter = 0
@@ -194,7 +188,7 @@ my_icon = b'iVBORw0KGgoAAAANSUhEUgAAAEIAAABuCAYAAACTOsWlAAA31klEQVR4XuW8Cayl53ke
 
 config_template = '''#NOTE: folders need to be relative to where you start the program or absolute! NOT NOT NOT based on where this config file lives\n#NOTE: you will need to enter the config file relative filepath when accessing it.\n[general]\npreservica_version = \nstandard_directory_uuid = \nsuffix_count = 3\nobject_type = multi-page document\ndelay = 300\nquiet_start = 08:00:00\nquiet_end = 08:00:01\ninterval = 300\nsound = \nexport_location = \npax_staging = \ndefault_metadata = \ntransfer_agent = \n[1_version_flat]\nroot_folder = \n[2_version_flat]\nroot_folder = \npreservation_folder = \npresentation_folder = \n[2_version_crawler]\nroot_folder = \npreservation_folder = \npresentation_folder = \n[3_version_flat]\npreservation_folder = \nintermediary_folder = \npresentation_folder = \n[3_version_crawler_tree]\nroot_folder = \npreservation_folder = preservation1\nintermediary_folder = presentation2\npresentation_folder = presentation3'''
 
-Sg.theme('DarkGreen5')
+Sg.theme('DarkTeal1')
 left_layout = [[
         Sg.Checkbox(text="Validate xml", default=False, key="-VALIDATE-",
                  tooltip="Select this to validate sidecar metadata files before they are inserted into opex files, "
@@ -282,14 +276,13 @@ right_layout = [
         Sg.Text("General variables", text_color="orchid1", font=("Calibri", "12", "underline"))
     ],
     [
-        Sg.Push(),
-        Sg.Text("Preservica Version:", key="-PreservicaVersion_TEXT-"),
-        Sg.Input("", size=(50, 1), key="-PreservicaVersion-")
+        Sg.Text("Item-Level Security Tag:", key="-SecurityTag_Text-"),
     ],
     [
-        Sg.Push(),
-        Sg.Text("UUID to upload to", visible=True, key="-UUID_Text-"),
-        Sg.Input("", size=(50, 1), visible=True, key='-UUID-')
+        Sg.Radio(text="Digitized", group_id="security", default=True, key="-SECURITY_DIGITIZED-")
+    ],
+    [
+        Sg.Radio(text="open", group_id="security", default=False, key="-SECURITY_OPEN-")
     ],
     [
         Sg.Checkbox(text="incremental clean-up?", default=False, key="-CLEANUP-",
@@ -310,22 +303,12 @@ right_layout = [
         Sg.Radio(text="Film", group_id="radio2", default=False, key="-OBJECT_TYPE_film-")
     ],
     [
-        Sg.Checkbox("Play sound when complete?", checkbox_color="dark green", key="-NOTIFICATION-",
-                    tooltip="will play audio notification when full upload run is complete, for passive monitoring")
-    ],
-    [
-        Sg.Push(),
-        Sg.Text("wav file to play", visible=True, key="-SOUND_Text-"),
-        Sg.Input("", size=(50, 1), visible=True, key="-SOUND-"),
-        Sg.FileBrowse(file_types=(("wav files only", "*.wav"),), visible=False, key="-SOUND_Browse-")
-    ],
-    [
         Sg.HorizontalSeparator()
     ],
     [
         Sg.Push(),
-        Sg.Text(text="pax staging area", visible=False, key="-temp_staging_text-"),
-        Sg.Input(default_text="", size=(50, 1), visible=False, key="-temp_staging-")
+        Sg.Text(text="pax staging area", key="-temp_staging_text-"),
+        Sg.Input(default_text="", size=(50, 1), key="-temp_staging-")
     ],
     [
         Sg.Push(),
@@ -420,7 +403,6 @@ while True:
     event, values = window.read()
     use_config = values["-CONFIG-"]
     configfile = values['-CONFIGFILE-']
-    notification = values['-NOTIFICATION-']
     if values['-TYPE_1v-'] is True:
         opex_type = "1versions_flat"
         window['-ROOT_Text-'].update(visible=True)
@@ -516,21 +498,7 @@ while True:
         window['-2vTree_preservation-'].update(visible=False)
         window['-2vTree_presentation_Text-'].update(visible=False)
         window['-2vTree_presentation-'].update(visible=False)
-    if values['-NOTIFICATION-'] is True:
-        window['-SOUND_Text-'].update(visible=True)
-        window['-SOUND-'].update(visible=True)
-        window['-SOUND_Browse-'].update(visible=True)
     # assign variables based on inputs
-    version = values['-PreservicaVersion-']
-    if not version.startswith("v"):
-        version = f"v{version}"
-    namespaces = {'xip': f'http://preservica.com/XIP/v{version}',
-                  'EntityResponse': f'http://preservica.com/EntityAPI/v{version}',
-                  'ChildrenResponse': f'http://preservica.com/EntityAPI/v{version}',
-                  'MetadataResponse': f'http://preservica.com/EntityAPI/v{version}',
-                  'dcterms': 'http://dublincore.org/documents/dcmi-terms',
-                  'tslac': 'https://www.tsl.texas.gov/',
-                  'opex': 'http://www.opexpreservationexchange.org/opex/v1.1'}
     object_type = ""
     if values['-OBJECT_TYPE_normal-'] is True:
         object_type = ""
@@ -539,6 +507,11 @@ while True:
     if values['-OBJECT_TYPE_film-'] is True:
         object_type = "film"
     staging = values['-UploadStaging-']
+    asset_tag = "open"
+    if values["-SECURITY_DIGITIZED-"] is True:
+        asset_tag = "Digitized"
+    if values['-SECURITY_OPEN-'] is True:
+        asset_tag = "open"
     log = open("opex_generator_log.txt", "a")
     helperFile = "helper.txt"
     counter1 = 0
@@ -605,14 +578,8 @@ while True:
                 print("something even more")
             var = config.get('general', 'default_metadata')
             window['-default_metadata-'].update(var)
-            var = config.get('general', 'preservica_version')
-            window['-PreservicaVersion-'].update(var)
-            var = config.get('general', 'standard_directory_uuid')
-            window['-UUID-'].update(var)
             var = config.get('general', 'export_location')
             window['-UploadStaging-'].update(var)
-            var = config.get('general', 'sound')
-            window['-SOUND-'].update(var)
             window['-OUTPUT-'].update("\nConfiguration loaded", append=True)
     # here we go again
     exclude_list = ['.metadata', 'Thumbs.db']
@@ -668,7 +635,7 @@ while True:
                         valuables['asset_id'] = filename.replace(f'.{filename.split(".")[-1]}',"")
                         valuables['asset_title'] = valuables['asset_id']
                         valuables['asset_description'] = valuables['asset_id']
-                        valuables['asset_tag'] = "open"
+                        valuables['asset_tag'] = asset_tag
                         valuables['metadata_file'] = item_metadata
                         create_directory(filename2)
                         shutil.copy2(filename1, filename2)
@@ -752,7 +719,7 @@ while True:
                             valuables['asset_id'] = container
                             valuables['asset_title'] = valuables['asset_id']
                             valuables['asset_description'] = valuables['asset_id']
-                            valuables['asset_tag'] = "open"
+                            valuables['asset_tag'] = asset_tag
                             valuables['metadata_file'] = item_metadata
                             make_opex(valuables, target_pax)
                 if window['-CLEANUP-'] is True:
@@ -861,7 +828,7 @@ while True:
                         valuables['asset_description'] = object_type
                     else:
                         valuables['asset_description'] = valuables['asset_id']
-                    valuables['asset_tag'] = "open"
+                    valuables['asset_tag'] = asset_tag
                     valuables['metadata_file'] = item_metadata
                     make_opex(valuables, target_pax)
                 if window['-CLEANUP-'] is True:
@@ -959,7 +926,7 @@ while True:
                             valuables['asset_id'] = container
                             valuables['asset_title'] = valuables['asset_id']
                             valuables['asset_description'] = valuables['asset_id']
-                            valuables['asset_tag'] = "open"
+                            valuables['asset_tag'] = asset_tag
                             valuables['metadata_file'] = item_metadata
                             make_opex(valuables, target_pax)
                 if window['-CLEANUP-'] is True:
@@ -1105,7 +1072,7 @@ while True:
                         valuables['asset_description'] = object_type
                     else:
                         valuables['asset_description'] = valuables['asset_id']
-                    valuables['asset_tag'] = "open"
+                    valuables['asset_tag'] = asset_tag
                     valuables['metadata_file'] = item_metadata
                     make_opex(valuables, target_pax)
                 if window['-CLEANUP-'] is True:
@@ -1114,11 +1081,6 @@ while True:
             make_folder_opex(walker, export_dir, package_name, default_metadata)
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {pax_staging}", append=True)
             window['-OUTPUT-'].update("\nAll done", append=True)
-        if notification is True:
-            try:
-                finished(values['-SOUND-'])
-            except:
-                window['-OUTPUT-'].update(f"\ntrouble playing {values['-SOUND-']}, the process is stile COMPLETE though", append=True)
     if event == "Close" or event == Sg.WIN_CLOSED:
         break
 window.close()

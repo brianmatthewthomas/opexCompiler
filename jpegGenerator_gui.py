@@ -98,7 +98,7 @@ my_icon = b'iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAMAAAAOusbgAAAABGdBTUEAALGPC/xhBQAA
           b'GMrGjcbxMkO69EDuc/kH6DhA657cRLAAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjItMDMtMThUMTA6MDk6NDkrMDA6MDAF5/xCAAAAJX' \
           b'RFWHRkYXRlOm1vZGlmeQAyMDIyLTAzLTE4VDEwOjA5OjQ5KzAwOjAwdLpE/gAAAABJRU5ErkJggg=='
 
-SG.theme("DarkGreen5")
+SG.theme("LightBlue2")
 layout = [
     [
         SG.Push(),
@@ -193,6 +193,7 @@ layout = [
     ],
     [
         SG.Push(),
+        SG.Text("Status  "),
         SG.Multiline(default_text="", auto_refresh=True, reroute_stdout=False, key="-OUTPUT-", autoscroll=True, border_width=5, size=(70, 15)),
         SG.Push()
     ]
