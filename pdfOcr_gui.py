@@ -88,6 +88,9 @@ layout = [
         SG.In(default_text="preservica_presentation2_lnk", size=(50, 1), visible=True, key="-PRESENTATION_Folder-")
     ],
     [
+        SG.Checkbox(text="Check for if this is based on Microfilm from Ancestry.com", visible=True, key="-IS_Microfilm-")
+    ],
+    [
         SG.Checkbox(text="Check to generate metadata based on existing microfilm sidecar metadata", visible=True, key="-Generate_metadata-")
     ],
     [
@@ -135,6 +138,9 @@ while True:
     output = values['-OUTPUT_Folder-']
     preservation = values['-PRESERVATION_Folder-']
     presentation = values['-PRESENTATION_Folder-']
+    is_microfilm = False
+    if values['-IS_Microfilm-'] is True:
+        is_microfilm = True
     generate_metadata = False
     if values["-Generate_metadata-"] is True:
         generate_metadata = True
@@ -167,20 +173,21 @@ while True:
             pdf_counter = 0
             greatest = ""
             smallest = ""
-            for file in files:
-                if "-" in file:
-                    numberology = file.split(".")[0].split("-")[-1]
-                    numberology = int(numberology)
-                if "-" not in file:
-                    numberology = file.split(".")[0].split("_")[-1]
-                    numberology = int(numberology)
-                if greatest == "":
-                    greatest = numberology
-                    smallest = numberology
-                if greatest < numberology:
-                    greatest = numberology
-                if smallest > numberology:
-                    smallest = numberology
+            if is_microfilm is True:
+                for file in files:
+                    if "-" in file:
+                        numberology = file.split(".")[0].split("-")[-1]
+                        numberology = int(numberology)
+                    if "-" not in file:
+                        numberology = file.split(".")[0].split("_")[-1]
+                        numberology = int(numberology)
+                    if greatest == "":
+                        greatest = numberology
+                        smallest = numberology
+                    if greatest < numberology:
+                        greatest = numberology
+                    if smallest > numberology:
+                        smallest = numberology
             my_pdf = item.split("\\")[-2]
             my_pdf = f"{my_pdf}.pdf"
             my_pdf = os.path.join(item, my_pdf)
