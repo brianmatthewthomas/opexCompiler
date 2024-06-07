@@ -1,3 +1,21 @@
+<h1>OPEX Package Creator</h1>
+This iteratively updated graphical tool compiles OPEX packages using a graphical interface so it is easier to find errors and fix them when you are about to run it. It is meant to be compiled as an executable in windows (use Wine to compile via a Linux box), it may work without that on Windows by initiating at the command line but it will likely work faster standalong. The following variables apply when trying to run program:
+<ul>
+    <li>Validate xml: used to run across all XML and verify it parses</li>
+    <li>Type of packages: Radio buttons to choose the type of package involved</li>
+    <li>Push to Update: The interface is written with pysimplegui, which doesn't automatically update the interface when you do something. Push to update lets you refresh the screen</li>
+    <li>Use config file: checkbox to load variables from a config file</li>
+    <li>Generate config file template: use to generate a blank config file is you need one</li>
+    <li>Browse to config file: file picker for the config file, picking a non-config file is possible but when trying to load it will crash the program</li>
+    <li>Load: reads selected config file. You <strong>MUST</strong> load a config file, it is not enough to browse to it</li>
+    <li>Item-level security tag: this new option gets around auto-preservation messing up multi-part packages. My use-case centers on that so digitized is the default. The other option is "open", you'll need ot change the underlying code if you want other options</li>
+    <li>Incremental clean-up: this tool creates a second copy of stuff for packaging and is set to delete the temporary files after everything is packaged. If you are concerned about space, incremental clean-up will delete files as packages get completed. Not this makes time in process incredibly longer.</li>
+    <li>Object type: This is for compound objects in case special handling is needed. Object type will be listed in the item description.</li>
+    <li>The bottom part: this is where the various data variables go. Each field is unique so filling something in for 2-versions-flat and switching to 2-versions-atomic will mean you have to enter data again</li>
+</ul>
+
+<h1>OPEX Package Creator for Linux</h1>
+This variant of the opex package creator was spun off by changing one line of code (ironically it is all developed in a Linux environment) so that it works on Linux, for the purposed of getting around character limits in directory paths. It must be initiated at the command line and then a graphical interface will pop up. No idea why but it won't compile into a Linux executable correctly.
 <h1>OPEX compiler</h1>
 
 This is a set of scripts and accompanying module to compile an OPEX file that can be ingested into Preservica.
