@@ -279,10 +279,14 @@ right_layout = [
         Sg.Text("Item-Level Security Tag:", key="-SecurityTag_Text-"),
     ],
     [
-        Sg.Radio(text="Digitized", group_id="security", default=True, key="-SECURITY_DIGITIZED-")
+        Sg.Radio(text="Digitized", group_id="security", default=True, key="-SECURITY_DIGITIZED-", tooltip="default option, all selected all folders will have the 'open' security tag \nto prevent immediate public access from browsing but all items will have the 'Digitized' security tag")
     ],
     [
-        Sg.Radio(text="open", group_id="security", default=False, key="-SECURITY_OPEN-")
+        Sg.Radio(text="open", group_id="security", default=False, key="-SECURITY_OPEN-", tooltip="all folders will automatically have this security tag, selecting this \noption means the individual files will also have the 'open' security tag")
+    ],
+    [
+        Sg.Radio(text="other", group_id="security", default=False, key='-SECURITY_OTHER-'),
+        Sg.Input(default_text="", size=(25, 1), key='-SECURITY_OTHER_TEXT-', tooltip="Enter tag EXACTLY as it is in your system, folders will be \n'open' tag to shield from immediate public access and items will be this security tag")
     ],
     [
         Sg.Checkbox(text="incremental clean-up?", default=False, key="-CLEANUP-",
@@ -382,7 +386,7 @@ layout = [
     [
         Sg.Push(),
         Sg.Image(source=my_icon),
-        Sg.Multiline(default_text="Click execute to show progress\n------------------------------", size=(100, 10),
+        Sg.Multiline(default_text="Click execute to show progress\n------------------------------\nWritten for Windows with corresponding filepath length limitations\nUse Linux version in a Linux environment to circumvent this limitation", size=(100, 10),
                      auto_refresh=True, reroute_stdout=False, key="-OUTPUT-", autoscroll=True, border_width=5),
         Sg.Image(source=my_icon),
         Sg.Push(),
@@ -512,6 +516,8 @@ while True:
         asset_tag = "Digitized"
     if values['-SECURITY_OPEN-'] is True:
         asset_tag = "open"
+    if values['-SECURITY_OTHER-'] is True:
+        asset_tag = values['-SECURITY_OTHER_Text-']
     log = open("opex_generator_log.txt", "a")
     helperFile = "helper.txt"
     counter1 = 0
