@@ -657,7 +657,7 @@ while True:
                         window['-Progress-'].update_bar(counter, progress)
                         make_opex(valuables, filename2)
             make_folder_opex(walker, export_dir, package_name, default_metadata)
-            window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files at {temp_dir}", append=True)
+            window['-OUTPUT-'].update(f"\nall done!", append=True)
         if opex_type == "2versions_flat" and values['-VALIDATE-'] is False:
             pax_staging = values['-temp_staging-']
             preservation1 = values['-2vFlat_preservation-']
