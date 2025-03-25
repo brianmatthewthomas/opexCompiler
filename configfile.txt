@@ -9,11 +9,11 @@ delay = 60
 quiet_start = 08:00:00
 quiet_end = 17:00:01
 interval = 60
-export_location = /media/sf_Documents/opex_package/export2
-pax_staging = /media/sf_Documents/opex_package/temp
+export_location = /media/sf_H_DRIVE/opex_package/packages/social
+pax_staging = /media/sf_H_DRIVE/opex_package/temp2
 transfer_agent =
 sound = /media/sf_Documents/tng-computer-transfercomplete.wav
-default_metadata = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_2115/sorted2/B/Bosque/rhrd-bosque-countyClerk-probateMinutes.xml
+default_metadata = /media/sf_F_DRIVE/Archives/Electronic_records/Texas_Digital_Archive/working_materials/dcterms_3a.001b/agencies/tslac/social/dcterms-tslac_social-item.xml
 [1_version_flat]
 root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/Index to Probate Minutes_flat
 [2_version_flat]
@@ -21,9 +21,9 @@ root_folder = /media/sf_Z_DRIVE/Working/Ancestry/segmented/good_2115/sorted2/B/B
 preservation_folder = preservica_preservation1_lnk
 presentation_folder = preservica_presentation2_lnk
 [2_version_crawler]
-root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/film_test
+root_folder = /media/sf_G_DRIVE/Working/social/youtube/youtube4
 preservation_folder = preservation1
-presentation_folder = presentation2
+presentation_folder = preservation2
 [3_version_crawler]
 root_folder = /media/sf_Z_DRIVE/Working/incremental_ingest_testing/home
 preservation_folder = preservation1

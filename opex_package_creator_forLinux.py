@@ -736,7 +736,7 @@ while True:
             counter = 0
             for dirpath, dirnames, filenames in os.walk(walker):
                 if dirpath.endswith(preservation1):
-                    container = dirpath.split('/')[-1].split('\\')[-2]
+                    container = dirpath.split('/')[-1]
                     temp_dir = os.path.join(pax_staging, container)
                     temp_file = f"{temp_dir}.pax"
                     opex_target_dir = dirpath.replace(walker, f"{export_dir}/{package_name}/{my_container}").replace(preservation1, "")
