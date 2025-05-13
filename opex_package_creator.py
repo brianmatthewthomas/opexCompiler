@@ -775,7 +775,6 @@ while True:
                             valuables = ""
                             valuables = dict()
                             filename1 = os.path.join(dirpath, filename)
-                            presentation_representation = os.path.join(temp_dir, "Representation_Access")
                             preservation_representation = os.path.join(temp_dir, "Representation_Preservation")
                             if object_type == "film":
                                 filename2 = film_check(preservation_representation, filename)
@@ -799,10 +798,11 @@ while True:
                     files_list = [q for q in os.listdir(access_directory) if os.path.isfile(f"{access_directory}/{q}")]
                     flag = False
                     flag_check = []
+                    presentation_representation = os.path.join(temp_dir, "Representation_Access")
                     for possibility in files_list:
                         if object_type != "film":
-                            if not filename.endswith(".metadata"):
-                                root_name = filename.split(".")[0]
+                            if not possibility.endswith(".metadata"):
+                                root_name = possibility.split(".")[0]
                                 if root_name in flag_check:
                                     flag = True
                                 else:
@@ -839,6 +839,8 @@ while True:
                     create_directory(target_pax)
                     shutil.move(f"{temp_file}.zip", target_pax)
                     window['-OUTPUT-'].update(f"\n{container} packaged", append=True)
+                    valuables = ""
+                    valuables = dict()
                     valuables['asset_id'] = container
                     valuables['asset_title'] = valuables['asset_id']
                     if object_type != "":
