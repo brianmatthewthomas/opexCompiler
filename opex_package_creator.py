@@ -186,6 +186,34 @@ def make_folder_opex(source_dir, export_dir, package_UUID, metadata):
                     w.close()
     window['-OUTPUT-'].update("\nFolder inventories generated", append=True)
 
+def warc_check(export_dir, package_UUID):
+    for dirpath, dirnames, filenames in os.walk(f"{export_dir}/{package_UUID}"):
+        for filename in filenames:
+            if filenames.endswith(".warc.metadata") or filename.endswith(".wacz.metadata"):
+                filename1 = os.path.join(dirpath, filename)
+                nsmap = {'xmlns:opex': 'http://www.openpreservationexchange.org/opex/v1.1',
+                         'xmlns:dcterms': "http://dublincore.org/documents/dcmi-terms/",
+                         'xmlns:tslac': "https://www.tsl.texas.gov/"}
+                dom = ET.parse(filename1)
+                root = dom.getroot()
+                notes = root.xpath(".//tslac:note", namespaces=nsmap)
+                url = ""
+                if notes != [] and notes is not None:
+                    for note in notes:
+                        if "internal base url: " in note.text:
+                            split_list = note.text
+                            split_list = split_list.split("base url: ")
+                            url = split_list[-1]
+                if url != "":
+                    with open(filename1, 'r') as r:
+                        filedata = r.read()
+                        filedata = filedata.replace('</opex:Properties>', f'        <opex:Identifiers>\n            <opex:Identifier type="url">{url}</opex:Identifier>        </opex:Identifiers>\n    </opex:Properties>')
+                        with open(filename1, 'w') as w:
+                            w.write(filedata)
+                        w.close()
+                        window['-OUTPUT-'].update(f'Updated {filename} to include url identifier\n', append=True)
+
+    print("something")
 def prettify(elem):
     rough_string = ElementTree.tostring(elem, 'utf-8')
     try:
@@ -668,6 +696,7 @@ while True:
                         window['-Progress-'].update_bar(counter, progress)
                         make_opex(valuables, filename2)
             make_folder_opex(walker, export_dir, package_name, default_metadata)
+            warc_check(export_dir, package_name)
             window['-OUTPUT-'].update(f"\nall done!", append=True)
         if opex_type == "2versions_flat" and values['-VALIDATE-'] is False:
             pax_staging = values['-temp_staging-']
