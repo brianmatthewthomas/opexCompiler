@@ -20,7 +20,7 @@ config_template = '''#NOTE: folders need to be relative to where you start the p
 
 def progressCounty(directory):
     counter = 0
-    window['-OUTPUT-'].update(f"\nGathering progress bar information", append=True)
+    window['-OUTPUT-'].update(f"Gathering progress bar information\n", append=True)
     exclusions = ['metadata', 'db']
     for dirpath, dirnames, filenames in os.walk(directory):
         for filename in filenames:
@@ -34,10 +34,10 @@ def cleanup(directory):
         for a in z:
             try:
                 a = os.path.join(x, a)
-                window['-OUTPUT-'].update(f"\nattempting to remove {a}", append=True)
+                window['-OUTPUT-'].update(f"attempting to remove {a}\n", append=True)
                 os.remove(a)
             except Exception as error:
-                window['-OUTPUT-'].update(f"\nException deleting {a}: {error}", append=True)
+                window['-OUTPUT-'].update(f"Exception deleting {a}: {error}\n", append=True)
 
 def create_directory(fileName):
     if not os.path.exists(os.path.dirname(fileName)):
@@ -78,7 +78,7 @@ def film_check(filename):
     elif filename.split(".")[-1] == "vtt":
         # default vtt language is english, choose if nothing else is present
         data_point = "English"
-    elif filename.endswith(tuple(['mp4', 'm4v', 'mov'])):
+    elif filename.endswith(tuple(['mp4', 'm4v', 'mov', "mp4"])):
         data_point = "Movie"
     else:
         data_point = filename.split('.')[0]
@@ -91,28 +91,30 @@ def make_flat_pax(submission_dict):
     intermediate2 = submission_dict['intermediate_folder']
     presentation3 = submission_dict['presentation_folder']
     default_metadata = submission_dict['default_metadata']
+    window['-OUTPUT-'].update(f"preservation_directory: {preservation1}\n", append=True)
+    window['-OUTPUT-'].update(f"presentation_directory: {presentation3}\n", append=True)
     walker = submission_dict['root_folder']
     master_count = progressCounty(walker)
     my_container = walker.split("/")[-1]
     master_counter = 0
     folder_counter = 0
     my_dirpath = ""
+    exclude_list = ['.metadata', '.db']
     for dirpath, dirnames, filenames in os.walk(walker):
         for filename in filenames:
-            if not my_dirpath == dirpath:
-                folder_counter = 0
-                folder_count = len(filenames)
-                if submission_dict['opex_type'] == "2versions_flat":
-                    folder_count = folder_count * 2
-                else:
-                    folder_count = folder_count * 3
-                my_dirpath = dirpath
-            # recycle valuables variable by cycling thru another data type
-            valuables = ""
-            valuables = dict()
-            exclude_list = ['.metadata', '.db']
-            if not filename.endswith(tuple(exclude_list)):
-                if dirpath.endswith(preservation1):
+            if dirpath.endswith(preservation1):
+                if not my_dirpath == dirpath:
+                    folder_counter = 0
+                    folder_count = len(filenames)
+                    if submission_dict['opex_type'] == "2versions_flat":
+                        folder_count = folder_count
+                    else:
+                        folder_count = folder_count
+                    my_dirpath = dirpath
+                # recycle valuables variable by cycling thru another data type
+                valuables = ""
+                valuables = dict()
+                if not filename.endswith(tuple(exclude_list)):
                     valuables = ""
                     valuables = dict()
                     filename1 = os.path.join(dirpath, filename)
@@ -133,9 +135,10 @@ def make_flat_pax(submission_dict):
                         print(f"something went wrong with processing {filename}")
                         sys.exit()
                     else:
-                        window['-OUTPUT-'].update(f"\n{filename} verified", append=True)
+                        window['-OUTPUT-'].update(f"\n{filename} verified\n", append=True)
                     # set master checksum to make compare others against for generation creation
                     master_checksum = source_checksum
+                    intermediate_checksum = source_checksum
                     master_counter += 1
                     folder_counter += 1
                     window['-Progress-'].update_bar(master_counter, master_count)
@@ -218,8 +221,8 @@ def make_flat_pax(submission_dict):
                     valuables['asset_tag'] = submission_dict['security']
                     valuables['metadata_file'] = item_metadata
                     make_opex(valuables, target_pax)
-        if window['-CLEANUP-'] is True:
-            cleanup(pax_staging)
+            if window['-CLEANUP-'] is True:
+                cleanup(pax_staging)
 
 
 def make_atomic_pax(submission_dict):
@@ -312,7 +315,7 @@ def make_atomic_pax(submission_dict):
                         continue_flag = True # flag to ensure dupes aren't copied
                         presentation_flag = False # flag to deal with deciding if there is a need for intermediary presentation copy
                         if possibility in checksum_dict.keys():
-                            if checksum_dict[possibility] == source_checksum:
+                            if checksum_dict[possibility] == source_checksum and object_type != "film":
                                 window['-OUTPUT-'].update(f"{possibility} is a duplicate file, moving on\n", append=True)
                                 continue_flag = False
                         if continue_flag is True:
@@ -334,7 +337,6 @@ def make_atomic_pax(submission_dict):
                                     target = f"{temp_dir}/Representation_Presentation/{possibility.replace('.', '_')}/Generation_1/{possibility}"
                                 else:
                                     target = f"{temp_dir}/Representation_Presentation/{possibility.split('.')[0]}/Generation_1/{possibility}"
-
                                 presentation_flag = True
                         sorter_dict[target] = [source, source_checksum]
                         checksum_dict[possibility] = source_checksum
@@ -413,7 +415,7 @@ def make_atomic_pax(submission_dict):
             for my_key in sorter_dict.keys():
                 if "_Preservation_2/" in my_key:
                     multiple_preservation = True
-                if "_Presentation_2" in my_key:
+                if "_Presentation_2/" in my_key:
                     multiple_presentation = True
             for my_key in sorter_dict.keys():
                 if "_Preservation/" in my_key and multiple_preservation is True:
@@ -441,11 +443,11 @@ def make_atomic_pax(submission_dict):
                 master_counter += 1
                 folder_counter += 1
                 window['-Progress-'].update_bar(master_counter, master_count)
-                window['-Folder_Progress'].update_bar(folder_counter, folder_count)
+                window['-Folder_Progress-'].update_bar(folder_counter, folder_count)
             # locate metadata file and default to the default first
             item_metadata = default_metadata
             if os.path.isfile(f"{dirpath.replace(preservation1, '')}.metadata"):
-                item_metadata = f"{dirpath.replace(preservation1, '').metadata}"
+                item_metadata = f"{dirpath.replace(preservation1, '')}.metadata"
             elif os.path.isfile(f"{dirpath}/{container}.metadata"):
                 item_metadata = f"{dirpath}/{container}.metadata"
             elif os.path.isfile(f"{dirpath.replace(preservation1, intermediate2)}/{container}.metadata"):
@@ -468,7 +470,7 @@ def make_atomic_pax(submission_dict):
         if window['-CLEANUP-'] is True:
             cleanup(pax_staging)
     cleanup(pax_staging)
-    make_folder_opex(walker, export_dir, package_name, default_metadata)
+    make_folder_opex(submission_dict)
     window['-OUTPUT-'].update(f"all done! Don't forget to remove any lingering staging files at {pax_staging}\n",
                               append=True)
     window['-OUTPUT-'].update("All done\n", append=True)
@@ -797,13 +799,13 @@ right_layout = [
     ],
     [
         Sg.Push(),
-        Sg.Text("presentation folder name", visible=False, key="-presentation_Text-"),
-        Sg.Input("", size=(50, 1), visible=False, key="-presentation-")
+        Sg.Text("intermediate folder name", visible=False, key="-intermediate_Text-"),
+        Sg.Input("", size=(50, 1), visible=False, key="-intermediate-")
     ],
     [
         Sg.Push(),
-        Sg.Text("intermediate folder name", visible=False, key="-intermediate_Text-"),
-        Sg.Input("", size=(50, 1), visible=False, key="-intermediate-")
+        Sg.Text("presentation folder name", visible=False, key="-presentation_Text-"),
+        Sg.Input("", size=(50, 1), visible=False, key="-presentation-")
     ],
 ]
 bottom_layout = [
@@ -866,7 +868,7 @@ while True:
         'root_folder': "",
         'pax_staging': "",
         'preservation_folder': "",
-        'intermedia_folder': "",
+        'intermediate_folder': "",
         'presentation_folder': "",
         'security': "open",
         'object_type': "",
@@ -887,7 +889,8 @@ while True:
         window['-presentation_Text-'].update(visible=False)
         window['-presentation-'].update(visible=False)
     if values['-TYPE_2v-'] is True or values['-TYPE_2v-tree-'] is True:
-        submission_dict['opex_type'] = "2versions_flat"
+        if values['-TYPE_2v-'] is True:
+            submission_dict['opex_type'] = "2versions_flat"
         if values['-TYPE_2v-tree-'] is True:
             submission_dict['opex_type'] = "2versions_crawler"
         window['-ROOT_Text-'].update(visible=True)
@@ -922,6 +925,8 @@ while True:
     if values['-OBJECT_TYPE_social-'] is True:
         submission_dict['object_type'] = "social"
     submission_dict['upload_staging'] = values['-UploadStaging-']
+    submission_dict['default_metadata'] = values['-default_metadata-']
+    submission_dict['intermediate_folder'] = values['-intermediate-']
     if values["-SECURITY_DIGITIZED-"] is True:
         submission_dict['security'] = "Digitized"
     if values['-SECURITY_OPEN-'] is True:
@@ -1003,6 +1008,10 @@ while True:
         # set global variables
         submission_dict['upload_staging'] = values['-UploadStaging-']
         submission_dict['root_folder'] = values['-ROOT-']
+        submission_dict['preservation_folder'] = values['-preservation-']
+        submission_dict['intermediate_folder'] = values['-intermediate-']
+        submission_dict['presentation_folder'] = values['-presentation-']
+        submission_dict['pax_staging'] = values['-temp_staging-']
         my_container = submission_dict['root_folder'].split('/')[-1]
         submission_dict['package_identifier'] = str(uuid.uuid4())
         package_name = submission_dict['package_identifier']
@@ -1045,10 +1054,10 @@ while True:
             current_dirpath = ""
             for dirpath, dirnames, filenames in os.walk(submission_dict['root_folder']):
                 for filename in filenames:
-                    if not dirpath == current_dirpath:
+                    if dirpath != current_dirpath:
                         folder_counter = 0
                         folder_count = progressCounty(dirpath)
-                    folder_counter += 1
+                        current_dirpath = dirpath
                     # clear out the temporary dictionary for the opex file
                     valuables = ""
                     valuables = dict()
@@ -1075,6 +1084,7 @@ while True:
                             window['-OUTPUT-'].update(f"{filename} verified\n", append=True)
                         make_opex(valuables, filename2)
                         master_counter += 1
+                        folder_counter += 1
                     window['-Progress-'].update_bar(master_counter, master_count)
                     window['-Folder_Progress-'].update_bar(folder_counter, folder_count)
             make_folder_opex(submission_dict)
