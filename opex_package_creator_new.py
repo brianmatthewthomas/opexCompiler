@@ -20,7 +20,7 @@ config_template = '''#NOTE: folders need to be relative to where you start the p
 
 def progressCounty(directory):
     counter = 0
-    window['-OUTPUT-'].update(f"Gathering progress bar information\n", append=True)
+    window['-OUTPUT-'].update(f"\nGathering progress bar information\n", append=True)
     exclusions = ['metadata', 'db']
     for dirpath, dirnames, filenames in os.walk(directory):
         for filename in filenames:
@@ -224,7 +224,308 @@ def make_flat_pax(submission_dict):
             if window['-CLEANUP-'] is True:
                 cleanup(pax_staging)
 
+def make_atomic_pax_2v(submission_dict):
+    pax_staging = submission_dict['pax_staging']
+    preservation1 = submission_dict['preservation_folder']
+    presentation2 = submission_dict['presentation_folder']
+    default_metadata = submission_dict['default_metadata']
+    walker = submission_dict['root_folder']
+    export_dir = submission_dict['upload_staging']
+    package_name = submission_dict['package_identifier']
+    object_type = submission_dict['object_type']
+    exclude_list = ['.metadata', '.db']
+    my_container = walker.split('/')[-1]
+    master_count = progressCounty(walker)
+    master_counter = 0
+    folder_count = 0
+    folder_counter = 0
+    my_dirpath = ""
+    checksum_list = list()
+    for dirpath, dirnames, filenames in os.walk(walker):
+        if dirpath.endswith(preservation1):
+            container = dirpath.split('/')[-1].split('\\')[-2]
+            temp_dir = os.path.join(pax_staging, container)
+            temp_file = f"{temp_dir}.pax"
+            opex_target_dir = dirpath.replace(walker, f"{export_dir}/{package_name}/{my_container}").replace(
+                preservation1, "")
+            target_pax = f"{opex_target_dir[:-1]}.pax.zip"
+            flag = False
+            flag_check = []
+            for filename in filenames:
+                if object_type != "film":
+                    if not filename.endswith(".metadata"):
+                        root_name = filename.split(".")[0]
+                        if root_name in flag_check:
+                            flag = True
+                        else:
+                            flag_check.append(root_name)
+            for filename in filenames:
+                valuables = ""
+                valuables = dict()
+                if not filename.endswith(tuple(exclude_list)):
+                    valuables = ""
+                    valuables = dict()
+                    filename1 = os.path.join(dirpath, filename)
+                    preservation_representation = os.path.join(temp_dir, "Representation_Preservation")
+                    if object_type == "film":
+                        filename2 = f"{preservation_representation}/{film_check(filename)}/Generation_1/{filename}"
+                    elif flag is True:
+                        filename2 = f"{preservation_representation}/{filename.replace('.', '_')}/Generation_1/{filename}"
+                    else:
+                        filename2 = f"{preservation_representation}/{filename.split('.')[0]}/Generation_1/{filename}"
+                    create_directory(filename2)
+                    shutil.copy2(filename1, filename2)
+                    shutil.copystat(filename1, filename2)
+                    source_checksum = create_sha256(filename1)
+                    target_checksum = create_sha256(filename2)
+                    if source_checksum != target_checksum:
+                        print(f"something went wrong with process {filename}")
+                        sys.exit()
+                    else:
+                        window['-OUTPUT-'].update(f"\n{filename} verified", append=True)
+                    master_counter += 1
+                    window['-Progress-'].update_bar(master_counter, master_count)
+                    checksum_list.append(source_checksum)
+            access_directory = dirpath.replace(preservation1, presentation2)
+            files_list = [q for q in os.listdir(access_directory) if os.path.isfile(f"{access_directory}/{q}")]
+            flag = False
+            flag_check = []
+            presentation_representation = os.path.join(temp_dir, "Representation_Access")
+            for possibility in files_list:
+                if object_type != "film":
+                    if not possibility.endswith(".metadata"):
+                        root_name = possibility.split(".")[0]
+                        if root_name in flag_check:
+                            flag = True
+                        else:
+                            flag_check.append(root_name)
+            for possibility in files_list:
+                if not possibility.endswith(tuple(exclude_list)):
+                    source = os.path.join(access_directory, possibility)
+                    source_checksum = create_sha256(source)
+                    if object_type == "film":
+                        target = f"{presentation_representation}/{film_check(possibility)}/Generation_1/{possibility}"
+                    elif flag is True:
+                        target = f"{presentation_representation}/{possibility.replace('.', '_')}/Generation_1/{possibility}"
+                    else:
+                        target = f"{presentation_representation}/{possibility.split('.')[0]}/Generation_1/{possibility}"
+                    if "preservation" in presentation2:
+                        semi_target = target.replace(presentation_representation, preservation_representation)
+                        semi_target = semi_target[:-(len(possibility)+1)]
+                        if os.path.isdir(semi_target):
+                            target = target.replace(presentation_representation, preservation_representation).replace('/Generation_1/', '/Generation_2/')
+                    if not source_checksum in checksum_list:
+                        create_directory(target)
+                        shutil.copy2(source, target)
+                        shutil.copystat(source, target)
+                        target_checksum = create_sha256(target)
+                        if source_checksum != target_checksum:
+                            print(f"something went wrong with process {possibility}")
+                            sys.exit()
+                        else:
+                            window['-OUTPUT-'].update(f"\n{possibility} verified", append=True)
+                        checksum_list.append(source_checksum)
+                    master_counter += 1
+                    window['-Progress-'].update_bar(master_counter, master_count)
+            item_metadata = default_metadata
+            if os.path.isfile(f"{dirpath.replace(preservation1, '')}.metadata"):
+                item_metadata = f"{dirpath.replace(preservation1, '').metadata}"
+            elif os.path.isfile(f"{dirpath}/{container}.metadata"):
+                item_metadata = f"{dirpath}/{container}.metadata"
+            elif os.path.isfile(f"{dirpath.replace(preservation1, presentation2)}/{container}.metadata"):
+                item_metadata = f"{dirpath.replace(preservation1, presentation2)}/{container}.metadata"
+            shutil.make_archive(temp_file, "zip", temp_dir)
+            create_directory(target_pax)
+            shutil.move(f"{temp_file}.zip", target_pax)
+            window['-OUTPUT-'].update(f"\n{container} packaged", append=True)
+            valuables = ""
+            valuables = dict()
+            valuables['asset_id'] = container
+            valuables['asset_title'] = valuables['asset_id']
+            if object_type != "":
+                valuables['asset_description'] = object_type
+            else:
+                valuables['asset_description'] = valuables['asset_id']
+            valuables['asset_tag'] = submission_dict['security']
+            valuables['metadata_file'] = item_metadata
+            make_opex(valuables, target_pax)
+        if window['-CLEANUP-'] is True:
+            cleanup(pax_staging)
 
+def make_atomic_pax_3v(submission_dict):
+    pax_staging = submission_dict['pax_staging']
+    preservation1 = submission_dict['preservation_folder']
+    presentation2 = submission_dict['intermediate_folder']
+    presentation3 = submission_dict['presentation_folder']
+    default_metadata = submission_dict['root_folder']
+    walker = submission_dict['root_folder']
+    export_dir = submission_dict['upload_staging']
+    package_name = submission_dict['package_identifier']
+    object_type = submission_dict['object_type']
+    exclude_list = ['.metadata', '.db']
+    my_container = walker.split('/')[-1]
+    master_count = progressCounty(walker)
+    master_counter = 0
+    my_dirpath = ""
+    for dirpath, dirnames, filenames in os.walk(walker):
+        if dirpath.endswith(preservation1):
+            preservation_counter = 0
+            presentation_counter = 0
+            intermediate_counter = 0
+            for filename in filenames:
+                if not filename.endswith(tuple(exclude_list)):
+                    preservation_counter += 1
+            access_directory = dirpath.replace(preservation1, presentation2)
+            files_list = [q for q in os.listdir(access_directory) if os.path.isfile(f"{access_directory}/{q}")]
+            for file in files_list:
+                if not file.endswith(tuple(exclude_list)):
+                    intermediate_counter += 1
+            access_directory = dirpath.replace(preservation1, presentation3)
+            files_list = [q for q in os.listdir(access_directory) if os.path.isfile(f"{access_directory}/{q}")]
+            for file in files_list:
+                if not file.endswith(tuple(exclude_list)):
+                    presentation_counter += 1
+            container = dirpath.split('/')[-1].split('\\')[-2]
+            temp_dir = os.path.join(pax_staging, container)
+            temp_file = f"{temp_dir}.pax"
+            opex_target_dir = dirpath.replace(walker, f"{export_dir}/{package_name}/{my_container}").replace(
+                preservation1, "")
+            target_pax = f"{opex_target_dir[:-1]}.pax.zip"
+            flag = False
+            flag_check = []
+            for filename in filenames:
+                if object_type != "film":
+                    if not filename.endswith(".metadata"):
+                        root_name = filename.split(".")[0]
+                        if root_name in flag_check:
+                            flag = True
+                        else:
+                            flag_check.append(root_name)
+            for filename in filenames:
+                valuables = ""
+                valuables = dict()
+                if not filename.endswith(tuple(exclude_list)):
+                    valuables = ""
+                    valuables = dict()
+                    filename1 = os.path.join(dirpath, filename)
+                    presentation_representation_1 = os.path.join(temp_dir, "Representation_Access_1")
+                    presentation_representation_2 = os.path.join(temp_dir, "Representation_Access_2")
+                    preservation_representation = os.path.join(temp_dir, "Representation_Preservation")
+                    if preservation_counter == intermediate_counter:
+                        presentation_representation_1 = os.path.join(temp_dir, "Representation_Preservation")
+                        presentation_representation_2 = os.path.join(temp_dir, "Representation_Access")
+                    if object_type == "film":
+                        filename2 = f"{preservation_representation}/{film_check(filename)}/Generation_1/{filename}"
+                    elif flag is True:
+                        filename2 = f"{preservation_representation}/{filename.replace('.', '_')}/Generation_1/{filename}"
+                    else:
+                        filename2 = f"{preservation_representation}/{filename.split('.')[0]}/Generation_1/{filename}"
+                    create_directory(filename2)
+                    shutil.copy2(filename1, filename2)
+                    shutil.copystat(filename1, filename2)
+                    source_checksum = create_sha256(filename1)
+                    target_checksum = create_sha256(filename2)
+                    if source_checksum != target_checksum:
+                        print(f"something went wrong with process {filename}")
+                        sys.exit()
+                    else:
+                        window['-OUTPUT-'].update(f"\n{filename} verified", append=True)
+                    master_counter += 1
+                    window['-Progress-'].update_bar(master_counter, master_count)
+            access_directory = dirpath.replace(preservation1, presentation2)
+            files_list = [q for q in os.listdir(access_directory) if os.path.isfile(f"{access_directory}/{q}")]
+            flag = False
+            flag_check = []
+            for possibility in files_list:
+                if object_type != "film":
+                    root_name = possibility.split(".")[0]
+                    if not possibility.endswith(".metadata"):
+                        if root_name in flag_check:
+                            flag = True
+                        else:
+                            flag_check.append(root_name)
+            for possibility in files_list:
+                if not possibility.endswith(tuple(exclude_list)):
+                    source = os.path.join(access_directory, possibility)
+                    if object_type == "film":
+                        target = f"{presentation_representation_1}/{film_check(possibility)}/Generation_1/{possibility}"
+                    elif flag is True:
+                        target = f"{presentation_representation_1}/{possibility.replace('.', '_')}/Generation_1/{possibility}"
+                    else:
+                        target = f"{presentation_representation_1}/{possibility.split('.')[0]}/Generation_1/{possibility}"
+                    if preservation_counter == intermediate_counter:
+                        target = target.replace('/Generation_1/', '/Generation_2/')
+                    create_directory(target)
+                    shutil.copy2(source, target)
+                    shutil.copystat(source, target)
+                    source_checksum = create_sha256(source)
+                    target_checksum = create_sha256(target)
+                    if source_checksum != target_checksum:
+                        print(f"something went wrong with process {possibility}")
+                        sys.exit()
+                    else:
+                        window['-OUTPUT-'].update(f"\n{possibility} verified", append=True)
+                    master_counter += 1
+                    window['-Progress-'].update_bar(master_counter, master_count)
+            access_directory = dirpath.replace(preservation1, presentation3)
+            files_list = [q for q in os.listdir(access_directory) if os.path.isfile(f"{access_directory}/{q}")]
+            flag = False
+            flag_check = []
+            for possibility in files_list:
+                if object_type != "film":
+                    root_name = possibility.split(".")[0]
+                    if not possibility.endswith(".metadata"):
+                        if root_name in flag_check:
+                            flag = True
+                        else:
+                            flag_check.append(root_name)
+            for possibility in files_list:
+                if not possibility.endswith(tuple(exclude_list)):
+                    source = os.path.join(access_directory, possibility)
+                    if object_type == "film":
+                        target = f"{presentation_representation_2}/{film_check(possibility)}/Generation_2/{possibility}"
+                    elif flag is True:
+                        target = f"{presentation_representation_2}/{possibility.replace('.', '_')}/Generation_2/{possibility}"
+                    else:
+                        target = f"{presentation_representation_2}/{possibility.split('.')[0]}/Generation_2/{possibility}"
+                    if intermediate_counter != presentation_counter or intermediate_counter == preservation_counter:
+                        target = target.replace("/Generation_2/", "/Generation_1/")
+                    create_directory(target)
+                    shutil.copy2(source, target)
+                    shutil.copystat(source, target)
+                    source_checksum = create_sha256(source)
+                    target_checksum = create_sha256(target)
+                    if source_checksum != target_checksum:
+                        print(f"something went wrong with process {possibility}")
+                        sys.exit()
+                    else:
+                        window['-OUTPUT-'].update(f"\n{possibility} verified", append=True)
+                    master_counter += 1
+                    window['-Progress-'].update_bar(master_counter, master_count)
+            item_metadata = default_metadata
+            if os.path.isfile(f"{dirpath.replace(preservation1, '')}.metadata"):
+                item_metadata = f"{dirpath.replace(preservation1, '').metadata}"
+            elif os.path.isfile(f"{dirpath}/{container}.metadata"):
+                item_metadata = f"{dirpath}/{container}.metadata"
+            elif os.path.isfile(f"{dirpath.replace(preservation1, presentation2)}/{container}.metadata"):
+                item_metadata = f"{dirpath.replace(preservation1, presentation2)}/{container}.metadata"
+            elif os.path.isfile(f"{dirpath.replace(preservation1, presentation3)}/{container}.metadata"):
+                item_metadata = f"{dirpath.replace(preservation1, presentation3)}/{container}.metadata"
+            shutil.make_archive(temp_file, "zip", temp_dir)
+            create_directory(target_pax)
+            shutil.move(f"{temp_file}.zip", target_pax)
+            window['-OUTPUT-'].update(f"\n{container} packaged", append=True)
+            valuables['asset_id'] = container
+            valuables['asset_title'] = valuables['asset_id']
+            if object_type != "":
+                valuables['asset_description'] = object_type
+            else:
+                valuables['asset_description'] = valuables['asset_id']
+            valuables['asset_tag'] = submission_dict['security']
+            valuables['metadata_file'] = item_metadata
+            make_opex(valuables, target_pax)
+        if window['-CLEANUP-'] is True:
+            cleanup(pax_staging)
 def make_atomic_pax(submission_dict):
     pax_staging = submission_dict['pax_staging']
     preservation1 = submission_dict['preservation_folder']
@@ -292,6 +593,7 @@ def make_atomic_pax(submission_dict):
                     sorter_dict[filename2] = [filename1, source_checksum]
                     checksum_dict[filename] = source_checksum
                     done_list.append(filename[:-len(filename.split('.')[-1])])
+                    window['-OUTPUT-'].update(f"\n{filename}: prepared for packaging\n", append=True)
             flag = False # flag to determine if an _ is needed in folder naming
             unnested = False # flag to determine if a _1, _2 will be needed at a later level because the files don't have a  match in the preservation version
             if submission_dict['opex_type'] == "3versions_crawler":
@@ -338,6 +640,7 @@ def make_atomic_pax(submission_dict):
                                 else:
                                     target = f"{temp_dir}/Representation_Presentation/{possibility.split('.')[0]}/Generation_1/{possibility}"
                                 presentation_flag = True
+                            window['-OUTPUT-'].update(f"\n{possibility}: prepared for packaging, {target}\n", append=True)
                         sorter_dict[target] = [source, source_checksum]
                         checksum_dict[possibility] = source_checksum
             access_directory = dirpath.replace(preservation1, presentation3)
@@ -388,6 +691,7 @@ def make_atomic_pax(submission_dict):
                                     target = f"{temp_dir}/Representation_Preservation_3/{possibility.split('.')[0]}/Generation_1/{possibility}"
                         if 'resentation' in presentation3:
                             if object_type == "film":
+                                window['-OUTPUT-'].update(f'\n{possibility}: is a film component\n', append=True)
                                 target = f"{temp_dir}/Representation_Presentation/{film_check(possibility)}/Generation_1/{possibility}"
                                 if target in sorter_dict.keys():
                                     target = f"{temp_dir}/Representation_Presentation/{film_check(possibility)}/Generation_2/{possibility}"
@@ -407,6 +711,7 @@ def make_atomic_pax(submission_dict):
                                 target = f"{temp_dir}/Representation_Presentation/{possibility.split('.')[0]}/Generation_1/{possibility}"
                                 if presentation_flag is True:
                                     target = f"{temp_dir}/Representation_Presentation_2/{possibility.split('.')[0]}/Generation_1/{possibility}"
+                        window['-OUTPUT-'].update(f"\n{possibility}: prepared for packaging, {target}\n", append=True)
                         sorter_dict[target] = [source, source_checksum]
                         checksum_dict[possibility] = source_checksum
             # now rectify folder naming to account for a need for a _1, _2, etc in preservation/presentation foldering
@@ -417,13 +722,14 @@ def make_atomic_pax(submission_dict):
                     multiple_preservation = True
                 if "_Presentation_2/" in my_key:
                     multiple_presentation = True
+            new_dict = dict()
             for my_key in sorter_dict.keys():
                 if "_Preservation/" in my_key and multiple_preservation is True:
                     new_key = my_key.replace('_Preservation/', '_Preservation_1/')
                     sorter_dict[new_key] = sorter_dict[my_key]
                     del sorter_dict[my_key]
                 if '_Presentation/' in my_key and multiple_presentation is True:
-                    new_key = my_key.replace('_Presentation/', '_Presentation_1')
+                    new_key = my_key.replace('_Presentation/', '_Presentation_1/')
                     sorter_dict[new_key] = sorter_dict[my_key]
                     del sorter_dict[my_key]
             # now copy the actual files
@@ -1098,7 +1404,7 @@ while True:
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files\n", append=True)
         if submission_dict['opex_type'] == '2versions_crawler' and values['-VALIDATE-'] is False:
             validate_submission(submission_dict)
-            make_atomic_pax(submission_dict)
+            make_atomic_pax_2v(submission_dict)
             cleanup(submission_dict['pax_staging'])
             make_folder_opex(submission_dict)
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files\n", append=True)
@@ -1110,7 +1416,7 @@ while True:
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files\n", append=True)
         if submission_dict['opex_type'] == '3versions_crawler' and values['-VALIDATE-'] is False:
             validate_submission(submission_dict)
-            make_atomic_pax(submission_dict)
+            make_atomic_pax_3v(submission_dict)
             cleanup(submission_dict['pax_staging'])
             make_folder_opex(submission_dict)
             window['-OUTPUT-'].update(f"\nall done! Don't forget to remove any lingering staging files\n", append=True)
