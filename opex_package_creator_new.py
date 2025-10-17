@@ -449,7 +449,7 @@ def make_atomic_pax_3v(submission_dict):
                             flag_check.append(root_name)
             for possibility in files_list:
                 if not possibility.endswith(tuple(exclude_list)):
-                    source = os.path.join(access_directory, possibility)
+                    source = os.path.join(intermediate_directory, possibility)
                     if object_type == "film":
                         target = f"{intermediate_representation_2}/{film_check(possibility)}/Generation_1/{possibility}"
                     elif flag is True:
